@@ -81,8 +81,10 @@
 
   /* botão logo embaixo da arte (aparece na primeira tela do celular, sem cobrir os personagens) */
   .acao {
-    padding: 14px 18px 18px;
-    background: linear-gradient(180deg, #0d0b0e, #120f12);
+    position: sticky; bottom: 0; z-index: 5;          /* sempre visível no rodapé da tela, em qualquer celular */
+    margin-top: max(-8vw, -38px);                    /* sobe por cima da faixa escura do fim da arte */
+    padding: 22px 18px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(13,11,14,0) 0%, rgba(13,11,14,.88) 30%, #0d0b0e 100%);
   }
 
   /* ---------------- BOTÃO VERDE ANIMADO ---------------- */
@@ -117,7 +119,7 @@
   .btn-zap .seta { font-size: .9em; animation: seta 1s ease-in-out infinite; }
 
   .sub-btn {
-    margin-top: 10px; text-align: center;
+    margin-top: 8px; text-align: center;
     font-size: 13px; font-weight: 800; color: #d9ffe8;
     text-shadow: 0 1px 3px #000, 0 0 8px #000;
   }
