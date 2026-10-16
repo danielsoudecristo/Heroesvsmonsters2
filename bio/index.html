@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heroes vs Monsters · Comunidade</title>
+<meta name="description" content="Heroes vs Monsters: Battlefront. Escolha seu lado e entre na comunidade no WhatsApp.">
+<meta property="og:title" content="Heroes vs Monsters · Comunidade">
+<meta property="og:description" content="Escolha seu lado. Derrube o castelo inimigo. Entre na comunidade!">
+<meta property="og:image" content="fundo.png">
+<meta name="theme-color" content="#0f0e11">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     TROQUE AQUI: o link da sua comunidade do WhatsApp fica no <script> lá embaixo (LINK_WHATSAPP)
+     e o vídeo é o arquivo video.mp4 nesta mesma pasta (16:9).
+     ===================================================================== */
+  :root {
+    --verde: #25d366;
+    --verde-escuro: #0f9d58;
+    --verde-brilho: #7dffb0;
+    --fundo: #0f0e11;
+    --texto: #fff6e0;
+    --ouro: #ffd36b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--fundo); color: var(--texto); }
+  body {
+    font-family: "Nunito", system-ui, sans-serif;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* no PC: a arte fica no meio, com ela mesma borrada atrás */
+  .borrado {
+    position: fixed; inset: -40px; z-index: 0;
+    background: url("fundo.png") center / cover no-repeat;
+    filter: blur(30px) brightness(.35) saturate(1.3);
+  }
+
+  .pagina {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 480px; margin: 0 auto;
+    box-shadow: 0 0 80px rgba(0,0,0,.8);
+  }
+
+  /* ---------------- a arte (941 x 1672) com o vídeo na área preta ---------------- */
+  .arte {
+    position: relative; width: 100%;
+    aspect-ratio: 941 / 1672;
+    background: url("fundo.png") center / 100% 100% no-repeat;
+  }
+  /* área preta da arte: x 66..888, y 532..1018 -> vídeo 16:9 centralizado nela */
+  .tela {
+    position: absolute;
+    left: 7.6%; width: 84.8%;
+    top: 32.5%;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px; overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 0 2px rgba(255,255,255,.06), 0 0 24px rgba(0,0,0,.9) inset;
+  }
+  .tela video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tela .vazio {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+    font-family: "Lilita One", sans-serif; font-size: clamp(16px, 5vw, 22px); color: #ffffffaa; text-align: center;
+  }
+  .tela.sem-video .vazio { display: flex; }
+  .tela.sem-video video { display: none; }
+  .som {
+    position: absolute; right: 8px; bottom: 8px;
+    border: 0; border-radius: 999px; padding: 6px 12px;
+    background: rgba(0,0,0,.6); color: #fff; font: 800 13px "Nunito", sans-serif;
+    cursor: pointer; backdrop-filter: blur(4px);
+  }
+  .tela.sem-video .som { display: none; }
+
+  /* botão logo embaixo da arte (aparece na primeira tela do celular, sem cobrir os personagens) */
+  .acao {
+    padding: 14px 18px 18px;
+    background: linear-gradient(180deg, #0d0b0e, #120f12);
+  }
+
+  /* ---------------- BOTÃO VERDE ANIMADO ---------------- */
+  .btn-zap {
+    position: relative; isolation: isolate;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 16px 18px;
+    border-radius: 18px;
+    text-decoration: none; color: #fff;
+    font-family: "Lilita One", sans-serif; font-size: clamp(17px, 5vw, 24px); white-space: nowrap;
+    letter-spacing: .5px; text-shadow: 0 2px 0 #0a6b3a, 0 3px 8px rgba(0,0,0,.35);
+    background: linear-gradient(180deg, #4dff95 0%, var(--verde) 45%, var(--verde-escuro) 100%);
+    border: 3px solid #b6ffd2;
+    box-shadow:
+      0 6px 0 #087a40,
+      0 10px 24px rgba(0,0,0,.55),
+      0 0 0 0 rgba(37,211,102,.7);
+    animation: pulsar 1.8s ease-out infinite, flutuar 3s ease-in-out infinite;
+    overflow: hidden;
+    transition: transform .12s, box-shadow .12s;
+  }
+  /* brilho que passa pelo botão */
+  .btn-zap::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -50%; left: -60%; width: 40%; height: 200%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent);
+    transform: rotate(20deg);
+    animation: brilho 2.6s ease-in-out infinite;
+  }
+  .btn-zap:active { transform: translateY(4px) scale(.98); box-shadow: 0 2px 0 #087a40, 0 6px 14px rgba(0,0,0,.5); }
+  .btn-zap svg { width: 1.35em; height: 1.35em; flex: none; filter: drop-shadow(0 2px 0 #0a6b3a); animation: balancar 1.8s ease-in-out infinite; }
+  .btn-zap .seta { font-size: .9em; animation: seta 1s ease-in-out infinite; }
+
+  .sub-btn {
+    margin-top: 10px; text-align: center;
+    font-size: 13px; font-weight: 800; color: #d9ffe8;
+    text-shadow: 0 1px 3px #000, 0 0 8px #000;
+  }
+  .sub-btn b { color: var(--verde-brilho); }
+
+  @keyframes pulsar {
+    0%   { box-shadow: 0 6px 0 #087a40, 0 10px 24px rgba(0,0,0,.55), 0 0 0 0 rgba(37,211,102,.75); }
+    70%  { box-shadow: 0 6px 0 #087a40, 0 10px 24px rgba(0,0,0,.55), 0 0 0 18px rgba(37,211,102,0); }
+    100% { box-shadow: 0 6px 0 #087a40, 0 10px 24px rgba(0,0,0,.55), 0 0 0 0 rgba(37,211,102,0); }
+  }
+  @keyframes flutuar { 0%,100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+  @keyframes brilho { 0% { left: -60%; } 55%,100% { left: 130%; } }
+  @keyframes balancar { 0%,100% { rotate: 0deg; } 20% { rotate: -14deg; } 40% { rotate: 12deg; } 60% { rotate: -6deg; } 80% { rotate: 0deg; } }
+  @keyframes seta { 0%,100% { translate: 0 0; } 50% { translate: 5px 0; } }
+
+  /* ---------------- BIO (embaixo da arte) ---------------- */
+  .bio {
+    padding: 26px 20px 34px;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(37,211,102,.12), transparent 60%),
+      linear-gradient(180deg, #120f12 0%, #0b0a0d 100%);
+    border-top: 1px solid rgba(255,211,107,.18);
+  }
+  .bio h1 {
+    font-family: "Lilita One", sans-serif; font-weight: 400;
+    font-size: clamp(26px, 8vw, 34px); line-height: 1.05; text-align: center;
+    background: linear-gradient(180deg, #fff1c4, var(--ouro) 55%, #d98b2b);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 2px 0 #4a2a0a);
+  }
+  .bio .lema {
+    margin-top: 8px; text-align: center; font-weight: 800; font-size: 15px; color: #f3e6c8;
+  }
+  .lados {
+    display: flex; justify-content: center; gap: 10px; margin-top: 14px;
+  }
+  .lado {
+    padding: 6px 14px; border-radius: 999px; font-weight: 900; font-size: 13px; letter-spacing: .5px;
+  }
+  .lado.h { background: rgba(40,120,255,.18); color: #8cc4ff; border: 1px solid rgba(80,160,255,.5); }
+  .lado.m { background: rgba(255,80,30,.16); color: #ffab85; border: 1px solid rgba(255,110,60,.5); }
+
+  .vantagens { list-style: none; margin: 22px 0 24px; display: grid; gap: 10px; }
+  .vantagens li {
+    display: flex; gap: 12px; align-items: center;
+    padding: 12px 14px; border-radius: 14px;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+    font-weight: 800; font-size: 15px; color: #f5ecd8;
+    opacity: 0; transform: translateY(10px);
+    animation: entrar .5s ease-out forwards;
+  }
+  .vantagens li:nth-child(1) { animation-delay: .1s; }
+  .vantagens li:nth-child(2) { animation-delay: .2s; }
+  .vantagens li:nth-child(3) { animation-delay: .3s; }
+  .vantagens li:nth-child(4) { animation-delay: .4s; }
+  .vantagens .ic {
+    flex: none; width: 38px; height: 38px; border-radius: 10px;
+    display: grid; place-items: center; font-size: 20px;
+    background: rgba(37,211,102,.14); border: 1px solid rgba(37,211,102,.35);
+  }
+  .vantagens small { display: block; font-weight: 700; font-size: 12.5px; color: #b9ad94; margin-top: 1px; }
+  @keyframes entrar { to { opacity: 1; transform: none; } }
+
+  .rodape { margin-top: 22px; text-align: center; font-size: 12px; color: #8a8072; font-weight: 700; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; }
+    .vantagens li { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="borrado" aria-hidden="true"></div>
+
+<main class="pagina">
+  <section class="arte" aria-label="Heroes vs Monsters Battlefront">
+    <div class="tela" id="tela">
+      <!-- Coloque o seu vídeo 16:9 nesta pasta com o nome video.mp4 -->
+      <video id="video" src="video.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <div class="vazio">🎬<span>Seu vídeo aqui</span></div>
+      <button class="som" id="som" type="button">🔇 Ativar som</button>
+    </div>
+  </section>
+
+  <div class="acao">
+      <a class="btn-zap link-zap" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.8 2 6.8L3 29l6.6-2c1.9 1 4.1 1.6 6.4 1.6 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.3c-2.1 0-4.1-.6-5.8-1.7l-.4-.3-3.9 1.2 1.2-3.8-.3-.4a10.4 10.4 0 0 1-1.7-5.6C5.1 10 10 5.3 16 5.3s10.9 4.7 10.9 10.5S22 26.3 16 26.3zm6-7.8c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7l.5-.6.3-.5c.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.7s1.2 3.2 1.4 3.4c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.2 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg>
+        <span>ENTRA NA COMUNIDADE</span>
+        <span class="seta" aria-hidden="true">➜</span>
+      </a>
+      <p class="sub-btn">Grátis · no <b>WhatsApp</b> · toque e entre</p>
+  </div>
+
+  <section class="bio">
+    <h1>Heroes vs Monsters<br>Battlefront</h1>
+    <p class="lema">Escolha seu lado. Derrube o castelo inimigo. ⚔️</p>
+    <div class="lados"><span class="lado h">🛡️ HEROES</span><span class="lado m">💀 MONSTERS</span></div>
+
+    <ul class="vantagens">
+      <li><span class="ic">🎮</span><div>Novidades antes de todo mundo<small>Personagens novos, atualizações e testes</small></div></li>
+      <li><span class="ic">🏆</span><div>PvP, Cerco e Campeonato<small>Desafie a galera e mostre quem manda</small></div></li>
+      <li><span class="ic">🎬</span><div>Bastidores do jogo<small>Veja o jogo sendo criado, passo a passo</small></div></li>
+      <li><span class="ic">💬</span><div>Fale direto com o criador<small>Dê ideias e ajude a decidir o futuro do jogo</small></div></li>
+    </ul>
+
+    <a class="btn-zap link-zap" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.8 2 6.8L3 29l6.6-2c1.9 1 4.1 1.6 6.4 1.6 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.3c-2.1 0-4.1-.6-5.8-1.7l-.4-.3-3.9 1.2 1.2-3.8-.3-.4a10.4 10.4 0 0 1-1.7-5.6C5.1 10 10 5.3 16 5.3s10.9 4.7 10.9 10.5S22 26.3 16 26.3zm6-7.8c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7l.5-.6.3-.5c.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.7s1.2 3.2 1.4 3.4c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.2 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg>
+      <span>ENTRA NA COMUNIDADE</span>
+      <span class="seta" aria-hidden="true">➜</span>
+    </a>
+
+    <p class="rodape">© Heroes vs Monsters: Battlefront</p>
+  </section>
+</main>
+
+<script>
+  /* ===== TROQUE PELO LINK DA SUA COMUNIDADE DO WHATSAPP ===== */
+  const LINK_WHATSAPP = "https://chat.whatsapp.com/COLE-SEU-LINK-AQUI";
+
+  document.querySelectorAll(".link-zap").forEach(a => a.href = LINK_WHATSAPP);
+
+  const tela = document.getElementById("tela");
+  const video = document.getElementById("video");
+  const som = document.getElementById("som");
+  const semVideo = () => tela.classList.add("sem-video");
+  video.addEventListener("error", semVideo);
+  if (video.error) semVideo();
+  fetch(video.src, { method: "HEAD" }).then(r => { if (!r.ok) semVideo(); }).catch(() => {});
+  som.addEventListener("click", () => {
+    video.muted = !video.muted;
+    if (!video.muted) video.play().catch(() => {});
+    som.textContent = video.muted ? "🔇 Ativar som" : "🔊 Som ligado";
+  });
+</script>
+</body>
+</html>
