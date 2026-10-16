@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heroes vs Monsters · Comunidade</title>
+<meta name="description" content="Heroes vs Monsters: Battlefront. Escolha seu lado e entre na comunidade no WhatsApp.">
+<meta property="og:title" content="Heroes vs Monsters · Comunidade">
+<meta property="og:description" content="Escolha seu lado. Derrube o castelo inimigo. Entre na comunidade!">
+<meta property="og:image" content="fundo.png">
+<meta name="theme-color" content="#0f0e11">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     TROQUE AQUI: o link da sua comunidade do WhatsApp fica no <script> lá embaixo (LINK_WHATSAPP)
+     e o vídeo é o arquivo video.mp4 nesta mesma pasta (16:9).
+     ===================================================================== */
+  :root {
+    --verde: #25d366;
+    --verde-escuro: #0f9d58;
+    --verde-brilho: #7dffb0;
+    --fundo: #0f0e11;
+    --texto: #fff6e0;
+    --ouro: #ffd36b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--fundo); color: var(--texto); }
+  body {
+    font-family: "Nunito", system-ui, sans-serif;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* no PC: a arte fica no meio, com ela mesma borrada atrás */
+  .borrado {
+    position: fixed; inset: -40px; z-index: 0;
+    background: url("fundo.png") center / cover no-repeat;
+    filter: blur(30px) brightness(.35) saturate(1.3);
+  }
+
+  .pagina {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 480px; margin: 0 auto;
+    box-shadow: 0 0 80px rgba(0,0,0,.8);
+  }
