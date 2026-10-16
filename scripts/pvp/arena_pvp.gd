@@ -2777,12 +2777,15 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 	var amistoso: bool = rede.get("amistoso", false)
 	var am: int = rede.get("aposta_moedas", 0)
 	var at: int = rede.get("aposta_trofeus", 0)
+	var sem_trofeus: bool = serie.get("sem_trofeus", false) == true   # ANTI-FARM (32_anti_farm.sql): não pagou nada
 	var deltas := {}
 	for j in r.dados:
 		var lado_j := str(j.get("lado", ""))
 		var dm := 0
 		var dtf := 0
-		if amistoso:
+		if sem_trofeus:
+			pass
+		elif amistoso:
 			if vl != "":
 				dm = am if lado_j == vl else -am
 				dtf = at if lado_j == vl else -at
@@ -2806,6 +2809,8 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 			sub += " · você venceu de Heroes e de Monsters!" if int(serie.get("pontos_dele", 0)) == 0 else " · você venceu o desempate!"
 		elif vl == "":
 			sub += " · ninguém ganhou troféu"
+		if sem_trofeus:
+			sub += " · sem troféus: vocês já jogaram 2 séries valendo hoje"
 	if rede.get("wo", false) and vl == lado_local:
 		sub += " · %s saiu: vitória por W.O." % adversario
 	f.subtitulo = sub
