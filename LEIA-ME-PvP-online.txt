@@ -25,5 +25,6 @@ COMO FUNCIONA
    - Turnos de 10 passos; a jogada vale 3 turnos depois (meio segundo). A tropa aparece clarinha até "chegar".
    - Se o outro sumir por 20 s (ou sair), você vence por W.O.
    - Botão de pausa no online = "Desistir" (a partida não para).
-   - Fim: o servidor grava. Vitória +30 troféus +50 moedas; derrota −20 troféus +15 moedas; empate +25 moedas.
+   - Fim: o servidor grava. Vitória +30 troféus +50 moedas; derrota −20 troféus +15 moedas (não existe empate:
+     sem relógio de fim, a Maré de Guerra e a Morte Súbita sempre derrubam um castelo).
    - O nível de cada personagem vem do servidor (não dá para trapacear mudando o aparelho).

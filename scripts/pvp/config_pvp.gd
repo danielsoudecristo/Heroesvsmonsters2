@@ -7,8 +7,11 @@ extends RefCounted
 ##   atravessam e aparecem na arena do outro, indo até o castelo dele.
 ## - Por dentro a partida é sempre igual (heróis na arena da esquerda, monstros na da direita);
 ##   quem joga de Monsters só vê a tela espelhada (o castelo dele também fica à esquerda).
-## - Só vence quem DERRUBA o castelo do outro (PvP, Cerco e Campeonato). Não conta quem matou mais.
-##   Acabou o tempo e nenhum castelo caiu: começa a FÚRIA (ver FURIA abaixo) até um castelo cair.
+## - Só vence quem DERRUBA o castelo do outro (PvP, Cerco e Campeonato). Não conta quem matou mais,
+##   NÃO tem relógio de fim e NÃO tem empate. O relógio da tela só conta quanto tempo a batalha já dura.
+## - MARÉ DE GUERRA (ver MARE abaixo): a cada minuto a batalha esquenta — cai mais energia do céu, as cartas
+##   recarregam mais rápido e (das marés altas em diante) o castelo leva mais dano. Resultado: cada vez MAIS
+##   personagens na arena, até um castelo cair. Se ainda assim demorar, vem a MORTE SÚBITA (só o castelo mais fraco desmorona).
 
 const C := preload("res://scripts/arena/config_arena.gd")
 
@@ -21,15 +24,24 @@ const CASTELO_HEROES_X := C.G.left - 26.0          ## passou daqui = entrou no c
 const CASTELO_MONSTERS_X := MW - C.G.left + 26.0   ## passou daqui = entrou no castelo dos monstros
 
 # ---------------------------------------------------------------- partida
-const DURACAO := 180.0                             ## segundos de batalha até começar a FÚRIA
-## FÚRIA (depois do tempo, até um castelo cair): o dano nos castelos multiplica (x2, e +1 a cada "a_cada" s,
-## até "max"); depois de "desmorona_apos" s de fúria, os DOIS castelos perdem "desmorona" de vida por segundo.
-const FURIA := {"dano": 2.0, "a_cada": 45.0, "max": 5.0, "desmorona_apos": 90.0, "desmorona": 1.0}
+## MARÉ DE GUERRA: sobe 1 nível a cada "a_cada" segundos de batalha (depois do preparo), até "max".
+## Por nível (o índice 0 é a maré 1): quantas vezes MAIS energia cai do céu (mais rápido), energia a mais em
+## cada gota, quantas vezes mais rápido as cartas recarregam e o dano que o castelo leva.
+## MORTE SÚBITA: depois de "morte_subita" s de batalha, o castelo com MENOS vida perde "desmorona" por segundo
+## (se os dois estiverem iguais, os dois). Sempre termina com um castelo no chão — e sem empate (ver _desempate).
+const MARE := {
+	"a_cada": 60.0, "max": 5,
+	"sol_ritmo":   [1.0, 1.35, 1.7, 2.1, 2.5],
+	"sol_extra":   [0, 5, 10, 15, 25],
+	"recarga":     [1.0, 1.2, 1.4, 1.65, 1.9],
+	"dano_castelo": [1.0, 1.0, 1.5, 2.0, 3.0],
+	"morte_subita": 330.0, "desmorona": 1.5,
+}
 const PREPARO := 25.0                              ## segundos para montar a arena (ninguém anda até acabar)
 const ENERGIA_INICIAL := 150                       ## energia de cada lado no começo
 const SOL := {"cada_min": 5.0, "cada_max": 8.0, "valor": 25}   ## energia que cai do céu em CADA arena
 const VIDA_CASTELO := 100.0
-const MOEDAS := {"vitoria": 30, "derrota": 10, "empate": 15}    ## contra o bot (no online também valem troféus)
+const MOEDAS := {"vitoria": 30, "derrota": 10, "empate": 15}    ## contra o bot (no online também valem troféus; "empate" não acontece mais)
 const BUSCA_ESPERA := 10.0                         ## segundos procurando adversário antes de cair no bot
 
 # ---------------------------------------------------------------- CERCO (em todos os modos)
@@ -81,10 +93,11 @@ const CARTAS_MONSTERS := ["esqueletoBlack", "esqueleto", "esqueletoFogo", "esque
 ## Os números vão do nível 1 (primeiro valor) ao nível máximo (segundo valor).
 # ---------------------------------------------------------------- MODO CERCO (2 rodadas: um DEFENDE, o outro ATACA, depois troca)
 ## Quem defende: as tropas ficam PARADAS guardando o castelo. Quem ataca: as tropas marcham (rápido até o portal).
-## A rodada só acaba quando o castelo de quem defende CAI (acabou o tempo = FÚRIA). Ganha quem derrubou o
-## castelo do outro mais rápido (= o castelo dele aguentou mais tempo).
+## A rodada só acaba quando o castelo de quem defende CAI (sem relógio de fim: a MARÉ sobe igual à da Batalha e,
+## depois de "morte_subita" s, o castelo de quem defende desmorona). Ganha quem derrubou o castelo do outro
+## mais rápido. Empatou no tempo? Ganha quem gastou MENOS energia no ataque (e, se nem isso, quem atacou primeiro, às cegas).
 const MODO_CERCO := {
-	"tempo": 120.0,          ## segundos de cada rodada (depois do preparo)
+	"morte_subita": 210.0,   ## segundos de ataque até o castelo de quem defende começar a desmoronar sozinho
 	"preparo": 15.0,         ## segundos para montar antes de cada rodada
 	"intervalo": 5.0,        ## pausa entre a rodada 1 e a 2
 	"energia_defesa": 100,   ## energia extra de quem defende (precisa montar a defesa logo)

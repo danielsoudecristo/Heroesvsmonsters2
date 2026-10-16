@@ -75,9 +75,11 @@ var vidas := {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 var recargas := {"heroes": {}, "monsters": {}}
 var herois: Array = []                      # [linha] -> Array[Unidade]
 var monstros: Array = []
-var tempo := P.DURACAO
+var tempo := 0.0                            # segundos de batalha (conta para CIMA: não tem relógio de fim)
 var preparo := P.PREPARO
-var furia_t := -1.0                         # segundos de FÚRIA (o tempo acabou e nenhum castelo caiu); -1 = ainda não
+var mare := 1                               # MARÉ DE GUERRA (1..P.MARE.max): sobe com o tempo de batalha
+var dano_feito := {"heroes": 0.0, "monsters": 0.0}   # dano que cada lado já deu no castelo do OUTRO (desempate)
+var gasto := {"heroes": 0.0, "monsters": 0.0}        # energia gasta em tropas (CERCO: desempate da rodada)
 var fim := false
 var vencedor := ""
 var abatidas := 0                           # monstros derrotados
@@ -283,9 +285,11 @@ func comecar() -> void:
 	prox_id_orbe = 1
 	fila_acoes.clear()
 	acumulado = 0.0
-	tempo = P.DURACAO
+	tempo = 0.0
 	preparo = P.PREPARO
-	furia_t = -1.0
+	mare = 1
+	dano_feito = {"heroes": 0.0, "monsters": 0.0}
+	gasto = {"heroes": 0.0, "monsters": 0.0}
 	fim = false
 	vencedor = ""
 	abatidas = 0
@@ -467,17 +471,16 @@ func texto_fase() -> String:
 			return "Troca de papéis..."
 		if preparo > 0.0:
 			return "R%d · %s · prepare %ds" % [rodada, papel, ceili(preparo)]
-		if furia_t >= 0.0:
-			return "R%d · %s · FÚRIA x%d" % [rodada, papel, int(_mult_furia())]
-		var tc := maxi(0, ceili(tempo))
-		return "R%d · %s · %d:%02d" % [rodada, papel, tc / 60, tc % 60]
+		return "R%d · %s · %s%s" % [rodada, papel, _mmss(tempo), _txt_mare()]
 	if preparo > 0.0:
 		return "Preparo %ds" % ceili(preparo)
-	var t := maxi(0, ceili(tempo))
-	if furia_t >= 0.0:
-		var tf := int(furia_t)
-		return "FÚRIA x%d · %d:%02d" % [int(_mult_furia()), tf / 60, tf % 60]
-	return "%d:%02d" % [t / 60, t % 60]
+	return "%s%s" % [_mmss(tempo), _txt_mare()]       # (sem fim: só mostra quanto a batalha já dura)
+
+## " · MARÉ x3" / " · MORTE SÚBITA" no relógio (nada na maré 1).
+func _txt_mare() -> String:
+	if tempo >= _t_morte_subita():
+		return " · MORTE SÚBITA"
+	return " · MARÉ x%d" % mare if mare > 1 else ""
 
 func horda_restante() -> float:
 	return clampf(vidas[outro] / P.VIDA_CASTELO, 0.0, 1.0)
@@ -623,6 +626,7 @@ func colocar(lado: String, id: String, linha: int, col: int, local: bool, inv :=
 		return false
 	if not livre:
 		energias[lado] -= p.custo
+	gasto[lado] += p.custo
 	recargas[lado][id] = p.recarga
 	var x := _x_casa(lado, col, inv)
 	var u := criar_unidade(id, lado, linha, x, _nivel_tropa(lado, id, local))
@@ -911,8 +915,9 @@ func ferir(alvo: Unidade, valor: float, origem: Unidade = null, origem_id := "",
 func ferir_castelo(lado: String, dano: float, pos: Vector2) -> void:
 	if fim:
 		return
-	dano *= _mult_furia()                                 # FÚRIA: o castelo leva mais dano
+	dano *= _mult_castelo()                               # MARÉ alta: o castelo leva mais dano
 	vidas[lado] = maxf(0.0, vidas[lado] - dano)
+	dano_feito["monsters" if lado == "heroes" else "heroes"] += dano
 	explosoes.append([pos, 60.0, 0.0, Color("ff6b5e") if lado == lado_local else Color("ffd34d")])
 	_texto(pos + Vector2(0, -60), "-%d" % roundi(dano), Color("ff6b5e") if lado == lado_local else Color("ffd34d"))
 	if lado == _arena_vista():
@@ -1106,7 +1111,7 @@ func _passo_sim(dt: float) -> void:
 	for lado in recargas:
 		var rec: Dictionary = recargas[lado]
 		for k in rec.keys():
-			rec[k] = maxf(0.0, rec[k] - dt)
+			rec[k] = maxf(0.0, rec[k] - dt * _mare_val("recarga"))   # MARÉ alta: as cartas voltam mais rápido
 	_passo_unidades(dt)
 	_passo_bonus_nick()
 	_passo_projeteis(dt)
@@ -1114,6 +1119,18 @@ func _passo_sim(dt: float) -> void:
 	_passo_ondas(dt)
 	_passo_orbes(dt)
 	passo_n += 1
+
+## Energia do céu nas DUAS arenas (cada um pega a sua). Na MARÉ alta cai mais vezes e cada gota vale mais.
+func _passo_sol(dt: float) -> void:
+	sol_t -= dt * _mare_val("sol_ritmo")
+	if sol_t <= 0.0:
+		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
+		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
+		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
+		for par in [[xa, "heroes"], [xb, "monsters"]]:
+			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
+				"valor": P.SOL.valor + int(_mare_val("sol_extra")), "t": 0.0, "lado": par[1]})
+			prox_id_orbe += 1
 
 ## Nick: +30% de vida enquanto houver esqueleto normal inimigo de pé (PvP).
 func _passo_bonus_nick() -> void:
@@ -1134,16 +1151,7 @@ func _passo_partida(dt: float) -> void:
 	if modo == "cerco":
 		_passo_cerco(dt)
 		return
-	# energia do céu nas DUAS arenas (cada um pega a sua)
-	sol_t -= dt
-	if sol_t <= 0.0:
-		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
-		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		for par in [[xa, "heroes"], [xb, "monsters"]]:
-			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
-				"valor": P.SOL.valor, "t": 0.0, "lado": par[1]})
-			prox_id_orbe += 1
+	_passo_sol(dt)                                      # energia do céu nas DUAS arenas
 	# BOT (só quando não é online)
 	if not online():
 		var forca := _forca_bot()
@@ -1165,41 +1173,65 @@ func _passo_partida(dt: float) -> void:
 			mostrar_banner("LUTEM!\nSó vence quem derrubar o castelo inimigo!", 2.4)
 			Sons.tocar("Jogo/som/lutem", 0.9)
 		return
-	tempo -= dt
-	if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:
-		_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+	tempo += dt
+	_passo_mare(dt)
+	if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:    # SÓ VENCE QUEM DERRUBA O CASTELO (e nunca empata)
+		if vidas.heroes <= 0.0 and vidas.monsters <= 0.0:
+			_encerrar(_desempate())                        # (os dois caíram no mesmo passo: coisa rara)
+		else:
+			_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+
+## MARÉ DE GUERRA (sem relógio de fim): a cada P.MARE.a_cada segundos a batalha esquenta (mais energia, cartas
+## mais rápidas, castelo mais frágil = mais personagens na arena). Na MORTE SÚBITA o castelo mais fraco
+## desmorona sozinho — sempre termina com um castelo no chão. (Passo fixo: igual nos dois aparelhos.)
+func _passo_mare(dt: float) -> void:
+	var nova := mini(int(P.MARE.max), 1 + int(floorf(tempo / float(P.MARE.a_cada))))
+	if nova > mare:
+		mare = nova
+		var txt := "Mais energia do céu e cartas mais rápidas!\nEncha a arena!"
+		if _mult_castelo() > 1.0:
+			txt = "Os castelos levam x%s de dano!\nMande TUDO para cima do castelo!" % String.num(_mult_castelo(), 1).trim_suffix(".0")
+		mostrar_banner("⚔ MARÉ DE GUERRA x%d ⚔\n%s" % [mare, txt], 2.8)
+		Sons.tocar("Jogo/som/lutem", 0.8)
+	var ms := _t_morte_subita()
+	if tempo < ms:
 		return
-	if tempo <= 0.0:                                    # SÓ VENCE QUEM DERRUBA O CASTELO: acabou o tempo = FÚRIA
-		_passo_furia(dt)
-		if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:
-			if vidas.heroes <= 0.0 and vidas.monsters <= 0.0:
-				_encerrar("")                                 # (os dois caíram no mesmo instante)
-			else:
-				_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+	if tempo - dt < ms:
+		mostrar_banner("☠ MORTE SÚBITA ☠\nO castelo mais fraco está DESMORONANDO!", 3.0)
+		Sons.tocar("Jogo/som/lutem", 1.0)
+	var lados: Array = [defensor]
+	if modo != "cerco":
+		var dif: float = vidas.heroes - vidas.monsters
+		lados = ["heroes", "monsters"] if absf(dif) < 0.01 else (["monsters"] if dif > 0.0 else ["heroes"])
+	for l in lados:
+		vidas[l] = maxf(0.0, vidas[l] - float(P.MARE.desmorona) * dt)
 
-## FÚRIA (o tempo acabou e nenhum castelo caiu): o dano nos castelos vai multiplicando e, depois de um tempo,
-## os dois castelos começam a desmoronar sozinhos — sempre termina com um castelo no chão. (Passo fixo.)
-func _passo_furia(dt: float) -> void:
-	if furia_t < 0.0:
-		furia_t = 0.0
-		mostrar_banner("FÚRIA!\nO tempo acabou: os castelos levam o DOBRO de dano.\nSó vence quem derrubar o castelo!", 3.2)
-		Sons.tocar("Jogo/som/lutem", 0.9)
-	var antes := _mult_furia()
-	furia_t += dt
-	if _mult_furia() > antes:
-		mostrar_banner("FÚRIA x%d!" % int(_mult_furia()), 1.6)
-	if furia_t >= float(P.FURIA.desmorona_apos):
-		if furia_t - dt < float(P.FURIA.desmorona_apos):
-			mostrar_banner("OS CASTELOS ESTÃO DESMORONANDO!", 2.4)
-		var lados := [defensor] if modo == "cerco" else ["heroes", "monsters"]
-		for l in lados:
-			vidas[l] = maxf(0.0, vidas[l] - float(P.FURIA.desmorona) * dt)
+func _t_morte_subita() -> float:
+	return float(P.MODO_CERCO.morte_subita) if modo == "cerco" else float(P.MARE.morte_subita)
 
-## Quanto o dano nos castelos multiplica agora (1 = normal; na FÚRIA: x2, x3... até o máximo).
-func _mult_furia() -> float:
-	if furia_t < 0.0:
-		return 1.0
-	return minf(float(P.FURIA.max), float(P.FURIA.dano) + floorf(furia_t / float(P.FURIA.a_cada)))
+## Valor da tabela P.MARE[chave] na maré de agora.
+func _mare_val(chave: String) -> float:
+	var tab: Array = P.MARE[chave]
+	return float(tab[clampi(mare - 1, 0, tab.size() - 1)])
+
+## Quanto o dano nos castelos multiplica agora (1 = normal; sobe nas marés altas).
+func _mult_castelo() -> float:
+	return _mare_val("dano_castelo")
+
+## SEM EMPATE: os dois castelos caíram no mesmo passo. Vence (nesta ordem) quem deu mais dano no castelo
+## do outro, quem tem mais tropas vivas; no impossível, os Heroes. (Tudo vem da partida: o mesmo nos dois aparelhos.)
+func _desempate() -> String:
+	if absf(float(dano_feito.heroes) - float(dano_feito.monsters)) > 0.001:
+		return "heroes" if float(dano_feito.heroes) > float(dano_feito.monsters) else "monsters"
+	var vivos := {"heroes": 0, "monsters": 0}
+	for par in [[herois, "heroes"], [monstros, "monsters"]]:
+		for l in par[0]:
+			for u in l:
+				if not u.morto:
+					vivos[par[1]] += 1
+	if vivos.heroes != vivos.monsters:
+		return "heroes" if vivos.heroes > vivos.monsters else "monsters"
+	return "heroes"
 
 func _passo_unidades(dt: float) -> void:
 	for r in C.G.rows:
@@ -2158,8 +2190,7 @@ func _jogada_do_bot() -> void:
 			if not u.morto and u.p.comportamento == "gerador":
 				ger += 1
 	var gerador := _melhor(opcoes, ["gerador"])
-	var tempo_total: float = P.MODO_CERCO.tempo if modo == "cerco" else P.DURACAO
-	if gerador and ger < ger_alvo and tempo > tempo_total * 0.35 and (esperto or rng.randf() < 0.5):
+	if gerador and ger < ger_alvo and tempo < _t_morte_subita() * 0.4 and (esperto or rng.randf() < 0.5):
 		var linhas := range(C.G.rows)
 		linhas.shuffle()
 		for r in linhas:
@@ -2252,8 +2283,9 @@ func _preparar_rodada() -> void:
 		bot_estilo = "defensor" if defensor == outro else "atacante"
 		bot_horda = 0
 	recargas = {"heroes": {}, "monsters": {}}
-	tempo = float(P.MODO_CERCO.tempo)
-	furia_t = -1.0
+	tempo = 0.0
+	mare = 1
+	gasto = {"heroes": 0.0, "monsters": 0.0}
 	preparo = float(P.MODO_CERCO.preparo)
 	sol_t = 2.0
 	bot_t = 3.0
@@ -2276,15 +2308,7 @@ func _passo_cerco(dt: float) -> void:
 			_banner_rodada()
 			Sons.tocar("Jogo/som/lutem", 0.7)
 		return
-	sol_t -= dt
-	if sol_t <= 0.0:
-		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
-		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		for par in [[xa, "heroes"], [xb, "monsters"]]:
-			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
-				"valor": P.SOL.valor, "t": 0.0, "lado": par[1]})
-			prox_id_orbe += 1
+	_passo_sol(dt)
 	if not online():
 		if preparo <= 0.0 and bot_nivel > 1:
 			energias[outro] += dt * P.BOT.energia_por_segundo_por_nivel * (bot_nivel - 1)
@@ -2305,14 +2329,13 @@ func _passo_cerco(dt: float) -> void:
 			mostrar_banner("LUTEM!\n%s" % ("Segure o castelo!" if defensor == lado_local else "Derrube o castelo inimigo!"), 2.2)
 			Sons.tocar("Jogo/som/lutem", 0.9)
 		return
-	tempo -= dt
-	if tempo <= 0.0:                                    # a rodada só acaba quando o castelo CAIR: acabou o tempo = FÚRIA
-		_passo_furia(dt)
+	tempo += dt                                         # a rodada só acaba quando o castelo CAIR (sem relógio de fim)
+	_passo_mare(dt)
 	if vidas[defensor] <= 0.0:
-		_fim_rodada(float(P.MODO_CERCO.tempo) - tempo, 0.0)   # quanto o castelo aguentou (contando a fúria)
+		_fim_rodada(tempo, 0.0)                         # quanto o castelo aguentou
 
 func _fim_rodada(aguentou: float, vida: float) -> void:
-	cerco_res[defensor] = {"tempo": aguentou, "vida": vida}
+	cerco_res[defensor] = {"tempo": aguentou, "vida": vida, "passos": roundi(aguentou * 60.0), "gasto": gasto[_atacante()]}
 	if rodada == 1:
 		var eu := defensor == lado_local
 		var quem := "Você" if eu else (adversario if adversario != "" else "O adversário")
@@ -2324,9 +2347,14 @@ func _fim_rodada(aguentou: float, vida: float) -> void:
 		return
 	var h: Dictionary = cerco_res.get("heroes", {"tempo": 0.0, "vida": 0.0})
 	var m: Dictionary = cerco_res.get("monsters", {"tempo": 0.0, "vida": 0.0})
-	var v := ""                                         # vence quem DERRUBOU o castelo do outro mais rápido
-	if absf(float(h.tempo) - float(m.tempo)) > 0.05:    # (= o castelo dele aguentou mais tempo)
-		v = "heroes" if float(h.tempo) > float(m.tempo) else "monsters"
+	# vence quem DERRUBOU o castelo do outro mais rápido (= o castelo dele aguentou mais tempo). SEM EMPATE:
+	# mesmo passo -> quem gastou menos energia atacando; nem isso -> quem atacou primeiro (às cegas, sem saber a marca).
+	var v := str(P.MODO_CERCO.primeiro_defende)
+	v = "monsters" if v == "heroes" else "heroes"
+	if int(h.get("passos", 0)) != int(m.get("passos", 0)):
+		v = "heroes" if int(h.get("passos", 0)) > int(m.get("passos", 0)) else "monsters"
+	elif absf(float(h.get("gasto", 0.0)) - float(m.get("gasto", 0.0))) > 0.001:
+		v = "heroes" if float(h.get("gasto", 0.0)) > float(m.get("gasto", 0.0)) else "monsters"   # (h.gasto = o que os Monsters gastaram atacando)
 	_encerrar(v)
 
 func _limpar_campo() -> void:
@@ -3422,7 +3450,7 @@ func foto_ao_vivo() -> Dictionary:
 					u.append([x.linha, roundi(x.position.x), 0 if x.lado == "heroes" else 1, x.p.id, roundi(100.0 * x.vida / maxf(1.0, x.vida_max))])
 	return {"m": "cerco" if modo == "cerco" else ("campeonato" if campeonato else "pvp"), "w": P.MW, "aw": C.W, "gl": C.G.left, "gc": C.G.cw,
 		"ll": lado_local, "adv": adversario, "online": online(), "vh": roundi(vidas.heroes), "vm": roundi(vidas.monsters), "vmax": P.VIDA_CASTELO,
-		"t": ceili(maxf(tempo, 0.0)), "prep": ceili(maxf(preparo, 0.0)), "e": energia, "fim": fim, "u": u}
+		"t": floori(maxf(tempo, 0.0)), "prep": ceili(maxf(preparo, 0.0)), "e": energia, "fim": fim, "u": u}
 
 ## FLECHA DE FOGO acertou: estoura em chamas, dano extra e o inimigo fica QUEIMANDO por uns segundos.
 func _acerto_fogo(pr, alvo: Unidade) -> void:
