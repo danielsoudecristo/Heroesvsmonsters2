@@ -1,0 +1,625 @@
+{
+	"arena_guerreiro_dia_largo": [],
+	"arena_guerreiro_dia_largo_halloween": [
+		{
+			"magica": true,
+			"r": 5.4,
+			"x": 986.5,
+			"y": 97.0
+		},
+		{
+			"magica": true,
+			"r": 4.8,
+			"x": 1408.8,
+			"y": 98.0
+		},
+		{
+			"magica": true,
+			"r": 4.8,
+			"x": 1785.9,
+			"y": 98.0
+		},
+		{
+			"magica": true,
+			"r": 5.0,
+			"x": 2101.1,
+			"y": 100.0
+		},
+		{
+			"magica": true,
+			"r": 4.0,
+			"x": 2341.4,
+			"y": 100.0
+		},
+		{
+			"magica": true,
+			"r": 8.4,
+			"x": 633.3,
+			"y": 374.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 486.6,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 8.0,
+			"x": 154.4,
+			"y": 672.0
+		},
+		{
+			"magica": true,
+			"r": 9.6,
+			"x": 562.2,
+			"y": 841.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 151.3,
+			"y": 926.0
+		}
+	],
+	"arena_guerreiro_dia_largo_inverno": [
+		{
+			"magica": false,
+			"r": 5.4,
+			"x": 986.5,
+			"y": 97.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1408.8,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1785.9,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 5.0,
+			"x": 2101.1,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 4.0,
+			"x": 2341.4,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 633.3,
+			"y": 374.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 486.6,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 8.0,
+			"x": 154.4,
+			"y": 672.0
+		},
+		{
+			"magica": false,
+			"r": 9.6,
+			"x": 562.2,
+			"y": 841.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 151.3,
+			"y": 926.0
+		}
+	],
+	"arena_guerreiro_dia_largo_outono": [
+		{
+			"magica": false,
+			"r": 5.4,
+			"x": 986.5,
+			"y": 97.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1408.8,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1785.9,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 5.0,
+			"x": 2101.1,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 4.0,
+			"x": 2341.4,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 633.3,
+			"y": 374.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 486.6,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 8.0,
+			"x": 154.4,
+			"y": 672.0
+		},
+		{
+			"magica": false,
+			"r": 9.6,
+			"x": 562.2,
+			"y": 841.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 151.3,
+			"y": 926.0
+		}
+	],
+	"arena_guerreiro_dia_largo_primavera": [
+		{
+			"magica": false,
+			"r": 5.4,
+			"x": 986.5,
+			"y": 97.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1408.8,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1785.9,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 5.0,
+			"x": 2101.1,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 4.0,
+			"x": 2341.4,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 633.3,
+			"y": 374.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 486.6,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 8.0,
+			"x": 154.4,
+			"y": 672.0
+		},
+		{
+			"magica": false,
+			"r": 9.6,
+			"x": 562.2,
+			"y": 841.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 151.3,
+			"y": 926.0
+		}
+	],
+	"arena_guerreiro_noite_largo": [
+		{
+			"magica": false,
+			"r": 14.0,
+			"x": 961.1,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 15.0,
+			"x": 2480.9,
+			"y": 125.0
+		},
+		{
+			"magica": false,
+			"r": 14.0,
+			"x": 1411.9,
+			"y": 111.0
+		},
+		{
+			"magica": false,
+			"r": 15.0,
+			"x": 1807.1,
+			"y": 113.0
+		},
+		{
+			"magica": false,
+			"r": 7.2,
+			"x": 2137.5,
+			"y": 112.0
+		},
+		{
+			"magica": false,
+			"r": 15.0,
+			"x": 595.0,
+			"y": 375.0
+		},
+		{
+			"magica": false,
+			"r": 20.0,
+			"x": 440.5,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 20.0,
+			"x": 518.5,
+			"y": 841.0
+		}
+	],
+	"arena_guerreiro_noite_largo_halloween": [
+		{
+			"magica": false,
+			"r": 5.4,
+			"x": 986.5,
+			"y": 97.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1408.8,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 4.8,
+			"x": 1785.9,
+			"y": 98.0
+		},
+		{
+			"magica": false,
+			"r": 5.0,
+			"x": 2101.1,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 4.0,
+			"x": 2341.4,
+			"y": 100.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 633.3,
+			"y": 374.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 486.6,
+			"y": 637.0
+		},
+		{
+			"magica": false,
+			"r": 8.0,
+			"x": 154.4,
+			"y": 672.0
+		},
+		{
+			"magica": false,
+			"r": 9.6,
+			"x": 562.2,
+			"y": 841.0
+		},
+		{
+			"magica": false,
+			"r": 8.4,
+			"x": 151.3,
+			"y": 926.0
+		}
+	],
+	"arena_monsters_dia_largo": [
+		{
+			"magica": false,
+			"r": 9.0,
+			"x": 979.4,
+			"y": 106.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1406.5,
+			"y": 107.0
+		},
+		{
+			"magica": false,
+			"r": 10.2,
+			"x": 2268.8,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1780.4,
+			"y": 105.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 2107.4,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 630.0,
+			"y": 381.0
+		},
+		{
+			"magica": false,
+			"r": 15.6,
+			"x": 482.4,
+			"y": 630.0
+		},
+		{
+			"magica": false,
+			"r": 16.0,
+			"x": 562.6,
+			"y": 835.0
+		}
+	],
+	"arena_monsters_dia_largo_halloween": [
+		{
+			"magica": false,
+			"r": 9.0,
+			"x": 979.4,
+			"y": 106.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1406.5,
+			"y": 107.0
+		},
+		{
+			"magica": false,
+			"r": 10.2,
+			"x": 2268.8,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1780.4,
+			"y": 105.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 2107.4,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 630.0,
+			"y": 381.0
+		},
+		{
+			"magica": false,
+			"r": 15.6,
+			"x": 482.4,
+			"y": 630.0
+		},
+		{
+			"magica": false,
+			"r": 16.0,
+			"x": 562.6,
+			"y": 835.0
+		}
+	],
+	"arena_monsters_dia_largo_inverno": [
+		{
+			"magica": false,
+			"r": 9.0,
+			"x": 979.4,
+			"y": 106.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1406.5,
+			"y": 107.0
+		},
+		{
+			"magica": false,
+			"r": 10.2,
+			"x": 2268.8,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1780.4,
+			"y": 105.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 2107.4,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 630.0,
+			"y": 381.0
+		},
+		{
+			"magica": false,
+			"r": 15.6,
+			"x": 482.4,
+			"y": 630.0
+		},
+		{
+			"magica": false,
+			"r": 16.0,
+			"x": 562.6,
+			"y": 835.0
+		}
+	],
+	"arena_monsters_noite_largo": [
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 968.4,
+			"y": 110.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 2112.0,
+			"y": 116.0
+		},
+		{
+			"magica": false,
+			"r": 10.0,
+			"x": 1399.3,
+			"y": 116.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 1778.5,
+			"y": 121.0
+		},
+		{
+			"magica": false,
+			"r": 4.0,
+			"x": 2230.6,
+			"y": 112.0
+		},
+		{
+			"magica": false,
+			"r": 6.0,
+			"x": 2551.2,
+			"y": 119.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 629.0,
+			"y": 384.0
+		},
+		{
+			"magica": false,
+			"r": 15.0,
+			"x": 482.6,
+			"y": 629.0
+		},
+		{
+			"magica": false,
+			"r": 15.6,
+			"x": 139.7,
+			"y": 823.0
+		},
+		{
+			"magica": false,
+			"r": 16.0,
+			"x": 561.8,
+			"y": 835.0
+		}
+	],
+	"arena_monsters_noite_largo_halloween": [
+		{
+			"magica": false,
+			"r": 9.0,
+			"x": 979.4,
+			"y": 106.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1406.5,
+			"y": 107.0
+		},
+		{
+			"magica": false,
+			"r": 10.2,
+			"x": 2268.8,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 11.0,
+			"x": 1780.4,
+			"y": 105.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 2107.4,
+			"y": 109.0
+		},
+		{
+			"magica": false,
+			"r": 12.0,
+			"x": 630.0,
+			"y": 381.0
+		},
+		{
+			"magica": false,
+			"r": 15.6,
+			"x": 482.4,
+			"y": 630.0
+		},
+		{
+			"magica": false,
+			"r": 16.0,
+			"x": 562.6,
+			"y": 835.0
+		}
+	]
+}

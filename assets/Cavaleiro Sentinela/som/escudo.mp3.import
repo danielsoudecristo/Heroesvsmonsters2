@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://nvwfu1j4t720"
+path="res://.godot/imported/escudo.mp3-1a130c9269f698d4ff6b54f946e50f00.mp3str"
+
+[deps]
+
+source_file="res://assets/Cavaleiro Sentinela/som/escudo.mp3"
+dest_files=["res://.godot/imported/escudo.mp3-1a130c9269f698d4ff6b54f946e50f00.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

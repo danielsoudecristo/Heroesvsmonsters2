@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://4xwb8n5pecqp"
+path="res://.godot/imported/som escudo quebrando.mp3-fa34aa84df249d1fa36bcc9690a5c7fe.mp3str"
+
+[deps]
+
+source_file="res://assets/Guerreiro Protetor/morrendo/som escudo quebrando.mp3"
+dest_files=["res://.godot/imported/som escudo quebrando.mp3-fa34aa84df249d1fa36bcc9690a5c7fe.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,117 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_anim"]
+[ext_resource type="Texture2D" uid="uid://uln4s2xfrqrg" path="res://assets_otimizados/Engenheiro Arcano/atacando_420x338.png" id="2_tiro"]
+[ext_resource type="Texture2D" uid="uid://bqr28kxmxfccx" path="res://assets_otimizados/Engenheiro Arcano/parado_225x321.png" id="3_par"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="4_ficha"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Engenheiro Arcano/morrendo_467x263.png" id="5_morrer"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Engenheiro Arcano/andando_348x298.png" id="6_andar"]
+
+[sub_resource type="Resource" id="Resource_andar"]
+script = ExtResource("1_anim")
+textura = ExtResource("6_andar")
+cols = 11
+quadros = 95
+cw = 348
+ch = 298
+ax = 136.1
+ay = 293.9
+fps = 18.0
+escala = 2.1
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+extra = {
+"fps_entrada": 18.0,
+"laco_de": 21
+}
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_anim")
+textura = ExtResource("3_par")
+cols = 12
+quadros = 85
+cw = 225
+ch = 321
+ax = 112.0
+ay = 300.0
+fps = 14.0
+escala = 2.1
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_atacar"]
+script = ExtResource("1_anim")
+textura = ExtResource("2_tiro")
+cols = 6
+quadros = 33
+cw = 420
+ch = 338
+ax = 118.0
+ay = 318.0
+fps = 30.0
+escala = 2.1
+repetir = false
+	quadros_acao = PackedInt32Array(2)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_morrer"]
+script = ExtResource("1_anim")
+textura = ExtResource("5_morrer")
+cols = 9
+quadros = 71
+cw = 467
+ch = 263
+ax = 220.0
+ay = 261.0
+fps = 24.0
+escala = 2.74146
+repetir = false
+caido = 0.8
+quadro_chao = 60
+
+[resource]
+script = ExtResource("4_ficha")
+id = "engenheiro"
+nome = "Engenheiro Arcano"
+nome_curto = "Engenheiro"
+descricao = "Raio elétrico na linha. A cada 4 tiros: SOBRECARGA salta para mais inimigos"
+par = "esqueletoBombardeiro"
+comportamento = "atirador"
+custo = 175
+recarga = 8.0
+desbloqueio_trofeus = 400
+vida = 350
+dano = 45
+intervalo_ataque = 0.5
+escala = 0.23809523809523808
+cores = PackedColorArray(0.2, 0.45, 0.6, 1, 0.75, 0.9, 1, 1)
+retrato_zoom = 0.84
+retrato_dy = 62.0
+anims = Dictionary[String, ExtResource("1_anim")]({
+	"andar": SubResource("Resource_andar"),
+	"atacar": SubResource("Resource_atacar"),
+	"morrer": SubResource("Resource_morrer"),
+	"parado": SubResource("Resource_parado")
+})
+sons = Dictionary[String, String]({
+	"morrer": "Engenheiro Arcano/morrendo/morrendo",
+	"tiro": "Engenheiro Arcano/som/tiro"
+})
+volumes = Dictionary[String, float]({
+	"morrer": 0.8,
+	"tiro": 0.6
+})
+extra = {
+"andar": {
+"para": 300.0,
+"pausa": 0.35,
+"velocidade": 53.0
+},
+	"flecha": {
+	"dano": 45,
+	"saida_x": 95.0,
+"saida_y": -113.0,
+"tipo": "energia",
+"velocidade": 620.0
+}
+}

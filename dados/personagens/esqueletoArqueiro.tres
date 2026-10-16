@@ -1,0 +1,111 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://crh8b7u3aewgr"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_eo5jr"]
+[ext_resource type="Texture2D" uid="uid://1pvyyqccgwws" path="res://assets/Esqueleto Arqueiro/andando/andando.png" id="2_42j1c"]
+[ext_resource type="Texture2D" uid="uid://bkrgm2jspgfvf" path="res://assets/Esqueleto Arqueiro/atirando/atirando.png" id="3_c3js0"]
+[ext_resource type="Texture2D" uid="uid://bg0xqqr3oy757" path="res://assets/Esqueleto/morrendo/morrendo.png" id="4_g8agv"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_8fnbx"]
+[ext_resource type="Texture2D" uid="uid://cpyirvh1ltsja" path="res://assets/Esqueleto Arqueiro/parado/parado_repouso.png" id="6_parado"]
+
+[sub_resource type="Resource" id="Resource_boir3"]
+script = ExtResource("1_eo5jr")
+textura = ExtResource("2_42j1c")
+quadros = 120
+cw = 161
+ch = 190
+ax = 71.0
+ay = 188.0
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_ukowb"]
+script = ExtResource("1_eo5jr")
+textura = ExtResource("3_c3js0")
+quadros = 151
+cw = 176
+ch = 202
+ax = 66.0
+ay = 200.0
+fps = 34.0
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(104)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_eo5jr")
+textura = ExtResource("6_parado")
+cols = 8
+quadros = 8
+cw = 141
+ch = 200
+ax = 70.5
+ay = 196.0
+fps = 10.0
+escala = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_0fa4c"]
+script = ExtResource("1_eo5jr")
+textura = ExtResource("4_g8agv")
+quadros = 19
+cw = 235
+ch = 195
+ax = 132.0
+ay = 183.0
+escala = 0.966
+repetir = false
+olha_direita = true
+caido = 1.2
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_8fnbx")
+id = "esqueletoArqueiro"
+nome = "Esqueleto Arqueiro"
+descricao = "Para de longe e atira flechas nos guerreiros"
+lado = "monsters"
+par = "arqueiro"
+comportamento = "atirador"
+custo = 125
+recarga = 7.0
+vida = 225
+dano = 28
+alcance = 360.0
+intervalo_ataque = 0.4
+velocidade = 41.0
+escala = 0.58
+cores = PackedColorArray(0.8627451, 0.92156863, 0.7882353, 1, 0.3647059, 0.47843137, 0.28235295, 1)
+cor_particulas = Color(0.9098039, 0.8745098, 0.78431374, 1)
+anims = Dictionary[String, ExtResource("1_eo5jr")]({
+"parado": SubResource("Resource_parado"),
+"andar": SubResource("Resource_boir3"),
+"atacar": SubResource("Resource_ukowb"),
+"morrer": SubResource("Resource_0fa4c")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"morrer": "Esqueleto/morrendo/som",
+"tiro": "Esqueleto Arqueiro/atirando/som da flecha",
+"fogo": "Esqueleto Arqueiro/atirando/fogo ao atingir o inimigo"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.8,
+"morrer": 0.8,
+"tiro": 0.7,
+"fogo": 0.85
+})
+extra = {
+	"flecha": {
+	"dano": 28,
+	"saida_x": 53,
+"saida_y": -74,
+"velocidade": 520
+},
+"ponta_flecha": [[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[114,143],[114,143],[113,149],[112,149],[111,148],[111,147],[110,146],[110,146],[110,147],[111,147],[112,146],[112,146],[113,146],[115,145],[118,143],[121,141],[121,141],[121,141],[128,137],[126,135],[136,130],[139,125],[139,125],[142,121],[145,114],[150,110],[150,110],[150,105],[153,100],[156,95],[159,91],[159,91],[157,86],[156,85],[159,78],[160,75],[159,74],[159,74],[158,72],[158,71],[157,71],[157,71],[157,70],[158,70],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[158,69],[157,69],[156,70],[157,70],[157,70],[157,70],[157,70],[156,71],[157,71],[156,71],[156,72],[156,72],[156,72],[157,72],[156,72],[156,72],[157,72],[157,72],[157,72],[157,72],[157,72],[157,72],[156,72],[156,72],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1]]
+}

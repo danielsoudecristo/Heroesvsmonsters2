@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://dpadf8bc46ymm"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_24ojn"]
+[ext_resource type="Texture2D" uid="uid://jyqgyn8sirci" path="res://assets/Elara/energia/energia.png" id="2_w84eu"]
+[ext_resource type="Texture2D" uid="uid://75dws7dt0u83" path="res://assets/Elara/morrendo/morrendo.png" id="3_mwq5x"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="4_w83j4"]
+
+[sub_resource type="Resource" id="Resource_agitl"]
+script = ExtResource("1_24ojn")
+textura = ExtResource("3_mwq5x")
+quadros = 142
+cw = 338
+ch = 179
+ax = 161.0
+ay = 168.0
+fps = 24.0
+repetir = false
+caido = 0.4
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_1olu1"]
+script = ExtResource("1_24ojn")
+textura = ExtResource("2_w84eu")
+quadros = 151
+cw = 128
+ch = 173
+ax = 60.0
+ay = 168.0
+fps = 12.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("4_w83j4")
+id = "elara"
+nome = "Elara"
+descricao = "Medita e junta energia nas mãos: a cada ciclo solta 25 de energia"
+par = "esqueletoBlack"
+comportamento = "gerador"
+custo = 50
+recarga = 7.0
+vida = 200
+gera_energia = 25
+escala = 0.57
+cores = PackedColorArray(1, 0.8862745, 0.72156864, 1, 0.72156864, 0.32941177, 0.11764706, 1)
+anims = Dictionary[String, ExtResource("1_24ojn")]({
+"morrer": SubResource("Resource_agitl"),
+"parado": SubResource("Resource_1olu1")
+})
+sons = Dictionary[String, String]({
+"gerar": "Elara/som/energia",
+"morrer": "Elara/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"gerar": 0.6,
+"morrer": 0.8
+})
+extra = {
+"energia_mao": {
+"quadro": 56,
+"x": 2,
+"y": -45
+}
+}

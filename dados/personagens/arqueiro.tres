@@ -1,0 +1,133 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://d0ypqcro1ovon"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_lyton"]
+[ext_resource type="Texture2D" uid="uid://ci7s6cnp8afvx" path="res://assets_otimizados/Arqueiro/andando/andando_203x243.png" id="2_brtl6"]
+[ext_resource type="Texture2D" uid="uid://cawspqju4k8kk" path="res://assets_otimizados/Arqueiro/atacando/atacando_191x246.png" id="2_lyton"]
+[ext_resource type="Texture2D" uid="uid://7jotjro0tgjl" path="res://assets_otimizados/Arqueiro/parado/parado_151x242.png" id="4_brtl6"]
+[ext_resource type="Texture2D" uid="uid://cwad15bbw16bj" path="res://assets/Arqueiro/caindo/caindo.png" id="5_8yuh8"]
+[ext_resource type="Texture2D" uid="uid://c07xefe3ty2a7" path="res://assets_otimizados/Arqueiro/preparando/preparando_165x266.png" id="5_fbxed"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="6_rpy4g"]
+
+[sub_resource type="Resource" id="Resource_fbxed"]
+script = ExtResource("1_lyton")
+textura = ExtResource("2_brtl6")
+quadros = 32
+cw = 203
+ch = 243
+ax = 96.03880794701988
+ay = 240.18384105960266
+fps = 18.0
+escala = 1.2195121951219514
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_nvrmy"]
+script = ExtResource("1_lyton")
+textura = ExtResource("2_lyton")
+quadros = 8
+cw = 191
+ch = 246
+ax = 77.08
+ay = 244.36
+fps = 12.0
+escala = 1.2195121951219512
+repetir = false
+quadros_acao = PackedInt32Array(4)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_hgatr"]
+script = ExtResource("1_lyton")
+textura = ExtResource("5_8yuh8")
+quadros = 151
+cw = 249
+ch = 197
+ax = 132.0
+ay = 195.0
+fps = 30.0
+escala = 1.529
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array(84)
+quadro_chao = 104
+
+[sub_resource type="Resource" id="Resource_swftf"]
+script = ExtResource("1_lyton")
+textura = ExtResource("4_brtl6")
+quadros = 12
+cw = 151
+ch = 242
+ax = 80.36
+ay = 240.26
+fps = 8.0
+escala = 1.2195121951219512
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_f4lnl"]
+script = ExtResource("1_lyton")
+textura = ExtResource("5_fbxed")
+cols = 6
+quadros = 6
+cw = 165
+ch = 266
+ax = 85.28
+ay = 264.85999999999996
+fps = 12.0
+escala = 1.2195121951219512
+repetir = false
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+extra = {
+"segura": 0.15
+}
+
+[resource]
+script = ExtResource("6_rpy4g")
+id = "arqueiro"
+nome = "Arqueiro"
+descricao = "Atira flechas na linha"
+par = "esqueletoArqueiro"
+comportamento = "atirador"
+custo = 125
+recarga = 7.0
+vida = 225
+dano = 28
+intervalo_ataque = 0.8
+escala = 0.41
+cores = PackedColorArray(0.9529412, 0.8156863, 0.8156863, 1, 0.72156864, 0.2627451, 0.2901961, 1)
+retrato_zoom = 0.84
+retrato_dy = 62.0
+anims = Dictionary[String, ExtResource("1_lyton")]({
+"andar": SubResource("Resource_fbxed"),
+"atacar": SubResource("Resource_nvrmy"),
+"morrer": SubResource("Resource_hgatr"),
+"parado": SubResource("Resource_swftf"),
+"preparar": SubResource("Resource_f4lnl")
+})
+sons = Dictionary[String, String]({
+"morrer": "Arqueiro/caindo/som",
+"morrer_reserva": "Arqueiro/morrendo/som",
+"tiro": "Arqueiro/atacando/som da flecha",
+"fogo": "Arqueiro/atacando/fogo ao atingir o inimigo"
+})
+volumes = Dictionary[String, float]({
+"morrer": 0.8,
+"morrer_reserva": 0.8,
+"tiro": 0.7,
+"fogo": 0.85
+})
+extra = {
+"andar": {
+"para": 330.0,
+"pausa": 0.35,
+"velocidade": 52.0
+},
+	"flecha": {
+	"dano": 28,
+	"saida_x": 63,
+"saida_y": -91,
+"velocidade": 620
+},
+"ponta_flecha": [[-1, -1], [-1, -1], [183, 98], [180, 94], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
+}

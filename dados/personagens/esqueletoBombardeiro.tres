@@ -1,0 +1,151 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_anim"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Bombardeiro/andando_233x270.png" id="2_andar"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="3_ficha"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Bombardeiro/parado_233x270.png" id="4_parado"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Bombardeiro/atacando_393x262.png" id="5_atacar"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Bombardeiro/arremessando_455x274.png" id="6_arremessar"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Bombardeiro/morrendo_364x269.png" id="7_morrer"]
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_anim")
+textura = ExtResource("4_parado")
+cols = 1
+quadros = 1
+cw = 233
+ch = 270
+ax = 98.5
+ay = 262.0
+fps = 1.0
+escala = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_andar"]
+script = ExtResource("1_anim")
+textura = ExtResource("2_andar")
+cols = 17
+quadros = 120
+cw = 233
+ch = 270
+ax = 98.5
+ay = 262.0
+fps = 18.0
+escala = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+extra = {
+"laco_de": 19
+}
+
+[sub_resource type="Resource" id="Resource_atacar"]
+script = ExtResource("1_anim")
+textura = ExtResource("5_atacar")
+cols = 10
+quadros = 120
+cw = 393
+ch = 262
+ax = 139.0
+ay = 255.0
+fps = 30.0
+escala = 1.0
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(49)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_arremessar"]
+script = ExtResource("1_anim")
+textura = ExtResource("6_arremessar")
+cols = 9
+quadros = 120
+cw = 455
+ch = 274
+ax = 201.5
+ay = 266.0
+fps = 30.0
+escala = 1.0
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(64)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_morrer"]
+script = ExtResource("1_anim")
+textura = ExtResource("7_morrer")
+cols = 11
+quadros = 68
+cw = 364
+ch = 269
+ax = 139.5
+ay = 261.0
+fps = 24.0
+escala = 1.0
+repetir = false
+olha_direita = true
+caido = 0.3
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+quadro_chao = 40
+
+[resource]
+script = ExtResource("3_ficha")
+id = "esqueletoBombardeiro"
+nome = "Esqueleto Bombardeiro"
+nome_curto = "Bombardeiro"
+descricao = "Arremessa bombas de longe no primeiro inimigo da linha; de perto, joga a bomba no pé dele"
+lado = "monsters"
+par = "engenheiro"
+comportamento = "bombardeiro"
+custo = 150
+recarga = 10.0
+desbloqueio_trofeus = 400
+vida = 300
+dano = 110
+alcance = 100.0
+intervalo_ataque = 0.5
+velocidade = 42.0
+dano_castelo = 15
+escala = 0.5
+cores = PackedColorArray(0.95, 0.72, 0.45, 1, 0.55, 0.16, 0.1, 1)
+cor_particulas = Color(1, 0.6, 0.2, 1)
+anims = Dictionary[String, ExtResource("1_anim")]({
+"andar": SubResource("Resource_andar"),
+"parado": SubResource("Resource_parado"),
+"atacar": SubResource("Resource_atacar"),
+"arremessar": SubResource("Resource_arremessar"),
+"morrer": SubResource("Resource_morrer")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"morrer": "Esqueleto Bombardeiro/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.8,
+"morrer": 1.0
+})
+extra = {
+"pavio_andar": [[165.6,96.9],[165.6,96.9],[165.0,98.6],[165.9,100.3],[167.0,102.3],[167.0,102.3],[169.0,103.3],[168.7,102.7],[169.4,101.0],[168.3,101.8],[168.3,101.8],[170.4,99.0],[170.7,98.7],[169.3,97.2],[168.5,96.1],[168.7,97.8],[168.7,97.8],[168.1,97.6],[167.8,98.8],[168.4,100.5],[168.4,100.5],[168.4,101.8],[168.3,102.7],[167.1,102.5],[167.5,100.1],[167.5,100.1],[166.8,98.9],[166.6,97.5],[164.7,97.8],[164.1,95.7],[163.6,94.4],[163.6,94.4],[165.7,93.8],[165.9,91.5],[166.6,92.4],[166.6,92.4],[166.7,94.7],[168.1,97.5],[168.8,98.5],[169.3,98.7],[169.3,98.7],[169.7,99.4],[169.6,98.7],[169.8,97.7],[169.1,96.7],[171.6,95.3],[171.6,95.3],[167.7,94.8],[167.6,94.9],[167.6,96.3],[167.6,96.3],[170.9,97.0],[171.1,98.2],[167.4,99.8],[167.0,101.9],[167.0,101.9],[167.2,101.8],[167.9,99.7],[166.6,99.6],[167.3,97.3],[166.6,95.9],[166.6,95.9],[169.8,93.6],[165.8,93.0],[164.8,92.8],[164.8,92.8],[166.3,92.2],[166.5,93.2],[165.8,95.9],[168.2,97.6],[168.2,97.6],[168.1,98.1],[169.6,98.9],[169.1,99.3],[169.4,100.7],[170.1,98.3],[170.1,98.3],[170.3,97.0],[169.6,97.2],[169.9,97.4],[169.9,97.4],[168.4,95.0],[168.4,96.8],[167.7,97.4],[167.7,98.0],[167.7,98.0],[170.9,98.6],[167.9,101.0],[167.5,103.2],[168.2,101.7],[168.1,100.4],[168.1,100.4],[167.1,98.8],[165.6,98.2],[167.3,95.0],[167.3,95.0],[166.7,93.6],[166.7,92.0],[166.0,91.4],[167.6,91.1],[167.6,91.1],[168.0,91.1],[167.9,92.7],[168.8,94.2],[168.4,98.5],[169.3,99.3],[169.3,99.3],[168.7,100.7],[172.5,99.0],[169.8,99.4],[169.8,99.4],[169.3,99.3],[170.3,97.5],[169.4,96.7],[168.3,95.4],[168.3,95.4],[170.3,95.4],[168.1,97.5],[169.5,98.7],[167.1,100.1]],
+"pavio_atacar": [[205.3,92.8],[205.3,93.0],[205.3,93.2],[205.1,93.4],[204.9,93.3],[204.8,93.2],[205.0,93.2],[205.0,93.4],[205.0,93.6],[204.7,93.9],[204.9,93.7],[205.3,93.1],[206.1,93.0],[207.4,93.1],[209.2,94.5],[210.6,95.6],[213.2,97.8],[217.3,99.2],[225.2,100.1],[231.2,99.7],[238.2,99.0],[245.8,98.2],[257.4,96.3],[269.5,93.0],[277.2,90.2],[283.9,88.0],[288.4,87.2],[293.3,86.3],[295.9,85.4],[297.1,84.0],[297.9,82.6],[297.5,80.8],[302.6,76.1],[301.9,73.6],[301.7,72.1],[296.1,74.8],[296.5,76.2],[300.7,76.1],[302.8,76.4],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1]],
+"solta_quadro": 39,
+"solta_ponto": [269.0,129.5],
+"bomba_img": "res://assets_otimizados/Esqueleto Bombardeiro/bomba_64x59.png",
+"fogo_na_bomba": [49,0],
+"explosao": [301.3,248],
+"pavio_arremesso": [[271.6,104.0],[271.4,104.0],[271.1,103.9],[270.4,103.9],[269.9,103.8],[269.6,103.6],[269.2,103.4],[269.7,102.9],[269.2,102.6],[269.5,102.1],[268.7,102.3],[268.0,102.5],[268.2,102.2],[269.5,101.6],[272.2,100.4],[273.9,99.7],[275.0,98.9],[274.4,99.2],[273.6,99.8],[272.5,100.8],[272.0,101.5],[268.7,105.6],[263.0,109.6],[255.5,111.4],[250.8,109.6],[245.2,106.1],[237.7,103.0],[224.6,96.8],[205.7,86.9],[186.9,76.6],[173.7,69.4],[163.4,63.3],[152.3,55.9],[136.7,45.5],[127.2,39.5],[116.5,34.3],[108.6,31.4],[97.5,28.8],[91.5,28.6],[87.2,29.1],[84.8,30.4],[82.3,32.0],[78.5,34.0],[74.6,35.6],[71.4,37.4],[69.4,38.8],[68.1,39.9],[68.2,42.3],[68.8,43.7],[70.2,44.8],[73.5,44.0],[78.5,43.0],[84.8,41.1],[92.5,35.2],[98.1,30.5],[105.7,30.9],[118.0,30.7],[133.2,29.8],[156.9,24.2],[178.9,23.6],[198.2,23.7],[212.5,25.5],[227.4,27.8],[238.4,29.6],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1]],
+"arremesso": {
+"solta_ponto": [319.0,70.5],
+"alcance": 420.0,
+"velocidade": 560.0
+},
+"morte_estouro": 38,
+"morte_ponto": [154.0, 123.0],
+"pavio_parado": [165.9,91.5],
+"bomba": {
+"dano_area": 60,
+"raio": 95.0
+}
+}

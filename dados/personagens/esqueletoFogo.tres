@@ -1,0 +1,99 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://clj1hocnmxqi0"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_thgcn"]
+[ext_resource type="Texture2D" uid="uid://ckscx7au6p6qe" path="res://assets/Esqueleto de Fogo/andando/andando.png" id="2_m56r3"]
+[ext_resource type="Texture2D" uid="uid://ddh1il72jc7gl" path="res://assets/Esqueleto de Fogo/socando/esqueleto_de_fogo_socando.png" id="3_knuaa"]
+[ext_resource type="Texture2D" uid="uid://bas3f41j4ms0b" path="res://assets_otimizados/Esqueleto de Fogo/caindo/caindo_esqueleto_de_fogo_474x270.png" id="4_thgcn"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_v5cui"]
+[ext_resource type="Texture2D" uid="uid://d4eptidb0oh1v" path="res://assets/Esqueleto de Fogo/parado/parado_repouso.png" id="6_parado"]
+
+[sub_resource type="Resource" id="Resource_x38tu"]
+script = ExtResource("1_thgcn")
+textura = ExtResource("2_m56r3")
+quadros = 40
+cw = 175
+ch = 248
+ax = 85.0
+ay = 241.0
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_vn01a"]
+script = ExtResource("1_thgcn")
+textura = ExtResource("3_knuaa")
+quadros = 60
+cw = 160
+ch = 236
+ax = 75.0
+ay = 233.0
+fps = 40.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_kiagn"]
+script = ExtResource("1_thgcn")
+textura = ExtResource("4_thgcn")
+quadros = 150
+cw = 474
+ch = 270
+ax = 236.0
+ay = 260.0
+fps = 24.0
+repetir = false
+olha_direita = true
+caido = 0.3
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_thgcn")
+textura = ExtResource("6_parado")
+cols = 8
+quadros = 8
+cw = 178
+ch = 247
+ax = 89.0
+ay = 243.0
+fps = 10.0
+escala = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_v5cui")
+id = "esqueletoFogo"
+nome = "Esqueleto de Fogo"
+descricao = "Mais forte e resistente, seus golpes queimam"
+lado = "monsters"
+par = "magoFogo"
+custo = 200
+recarga = 12.0
+vida = 270
+dano = 50
+	alcance = 60.0
+	velocidade = 38.0
+escala = 0.47
+cores = PackedColorArray(1, 0.84313726, 0.6039216, 1, 0.72156864, 0.2627451, 0.101960786, 1)
+cor_particulas = Color(1, 0.47843137, 0.11764706, 1)
+anims = Dictionary[String, ExtResource("1_thgcn")]({
+"parado": SubResource("Resource_parado"),
+"andar": SubResource("Resource_x38tu"),
+"atacar": SubResource("Resource_vn01a"),
+"morrer": SubResource("Resource_kiagn")
+})
+sons = Dictionary[String, String]({
+"ambiente": "Esqueleto de Fogo/som/fogo",
+"aparecer": "Esqueleto de Fogo/som/Esqueleto de fogo",
+"atacar": "Esqueleto de Fogo/socando/som",
+"morrer": "Esqueleto de Fogo/caindo/som"
+})
+volumes = Dictionary[String, float]({
+"ambiente": 0.5,
+"aparecer": 0.8,
+"atacar": 0.7,
+"morrer": 0.8
+})

@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://byrugy64sj76h"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_r6jp7"]
+[ext_resource type="Texture2D" uid="uid://c6me5sllftaq5" path="res://assets/Nick/parado/parado.png" id="2_1ad3q"]
+[ext_resource type="Texture2D" uid="uid://bt2sfrpiv671o" path="res://assets_otimizados/Nick/andando/andando_170x244.png" id="2_nx3hg"]
+[ext_resource type="Texture2D" uid="uid://bpimks6adokwy" path="res://assets/Nick/atacando/atacando.png" id="3_nx3hg"]
+[ext_resource type="Texture2D" uid="uid://dnhuuidmw8pei" path="res://assets/Nick/morrendo/morrendo.png" id="4_3wwba"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_2uiyx"]
+
+[sub_resource type="Resource" id="Resource_nx3hg"]
+script = ExtResource("1_r6jp7")
+textura = ExtResource("2_nx3hg")
+cols = 12
+quadros = 89
+cw = 170
+ch = 244
+ax = 81.86577181208054
+ay = 240.993288590604
+fps = 18.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_cho4x"]
+script = ExtResource("1_r6jp7")
+textura = ExtResource("3_nx3hg")
+quadros = 40
+cw = 311
+ch = 256
+ax = 78.0
+ay = 255.0
+fps = 16.0
+repetir = false
+quadros_acao = PackedInt32Array(18, 37)
+quadros_som = PackedInt32Array(5, 14, 28, 37)
+
+[sub_resource type="Resource" id="Resource_jge2h"]
+script = ExtResource("1_r6jp7")
+textura = ExtResource("4_3wwba")
+quadros = 19
+cw = 342
+ch = 260
+ax = 188.0
+ay = 255.0
+repetir = false
+caido = 1.2
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_24l6i"]
+script = ExtResource("1_r6jp7")
+textura = ExtResource("2_1ad3q")
+quadros = 8
+cw = 311
+ch = 256
+ax = 78.0
+ay = 255.0
+fps = 6.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_2uiyx")
+id = "nick"
+nome = "Nick"
+descricao = "Cavaleiro: golpeia quem chega perto"
+par = "esqueleto"
+recarga = 8.0
+vida = 340
+dano = 42
+alcance = 105.0
+intervalo_ataque = 0.3
+cores = PackedColorArray(0.827451, 0.8784314, 0.96862745, 1, 0.42745098, 0.54901963, 0.8, 1)
+retrato_zoom = 0.62
+retrato_dy = 18.0
+anims = Dictionary[String, ExtResource("1_r6jp7")]({
+"andar": SubResource("Resource_nx3hg"),
+"atacar": SubResource("Resource_cho4x"),
+"morrer": SubResource("Resource_jge2h"),
+"parado": SubResource("Resource_24l6i")
+})
+sons = Dictionary[String, String]({
+"ataque": "Nick/som/ataque",
+"morrer": "Nick/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"ataque": 0.8,
+"morrer": 0.8
+})
+extra = {
+"andar": {
+"para": 45.0,
+"pausa": 0.35,
+"velocidade": 33.0
+}
+}

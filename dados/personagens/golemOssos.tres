@@ -1,0 +1,138 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_anim"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="2_ficha"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Golem de Ossos/andando/andando_350x416.png" id="3_andar"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Golem de Ossos/parado/parado_164x270.png" id="4_parado"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Golem de Ossos/golpe1/golpe1_399x327.png" id="5_golpe1"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Golem de Ossos/golpe2/golpe2_648x366.png" id="6_golpe2"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Golem de Ossos/morrendo/morrendo_455x246.png" id="7_morrer"]
+
+[sub_resource type="Resource" id="Resource_andar"]
+script = ExtResource("1_anim")
+textura = ExtResource("3_andar")
+cols = 11
+quadros = 59
+cw = 350
+ch = 416
+ax = 190.63
+ay = 398.96
+fps = 18.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_anim")
+textura = ExtResource("4_parado")
+cols = 1
+quadros = 1
+cw = 164
+ch = 270
+ax = 79.64
+ay = 260.27
+fps = 1.0
+escala = 1.538462
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe1"]
+script = ExtResource("1_anim")
+textura = ExtResource("5_golpe1")
+cols = 10
+quadros = 103
+cw = 399
+ch = 327
+ax = 148.83
+ay = 312.9
+fps = 30.0
+escala = 1.538462
+repetir = false
+quadros_acao = PackedInt32Array(44, 95)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe2"]
+script = ExtResource("1_anim")
+textura = ExtResource("6_golpe2")
+cols = 6
+quadros = 61
+cw = 648
+ch = 366
+ax = 298.47
+ay = 356.09
+fps = 20.0
+escala = 1.538462
+repetir = false
+quadros_acao = PackedInt32Array(27, 38)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_morrer"]
+script = ExtResource("1_anim")
+textura = ExtResource("7_morrer")
+cols = 9
+quadros = 121
+cw = 455
+ch = 246
+ax = 222.08
+ay = 236.1
+fps = 30.0
+escala = 1.666667
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+quadro_chao = 60
+
+[resource]
+script = ExtResource("2_ficha")
+id = "golemOssos"
+nome = "Golem de Ossos"
+nome_curto = "Golem"
+descricao = "Gigante de fogo: varre a LINHA toda com uma parede de fogo e solta um raio que cruza a linha inteira, para a frente e para trás"
+lado = "monsters"
+par = "darian"
+comportamento = "golem"
+custo = 350
+recarga = 28.0
+desbloqueio_trofeus = 800
+vida = 1500
+dano = 60
+alcance = 220.0
+intervalo_ataque = 1.2
+velocidade = 50.0
+dano_castelo = 45
+escala = 0.5
+cores = PackedColorArray(0.94, 0.78, 0.55, 1, 0.42, 0.13, 0.05, 1)
+cor_particulas = Color(1, 0.55, 0.15, 1)
+barra_y = 205.0
+anims = Dictionary[String, ExtResource("1_anim")]({
+"andar": SubResource("Resource_andar"),
+"atacar": SubResource("Resource_golpe2"),
+"especial": SubResource("Resource_golpe1"),
+"morrer": SubResource("Resource_morrer"),
+"parado": SubResource("Resource_parado")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"fogo": "Esqueleto de Fogo/som/fogo",
+"golpe": "Esqueleto Tita/som/soco",
+"morrer": "Esqueleto Tita/som/ossos",
+"passos": "Esqueleto Tita/som/passo",
+"raio": "Mago de Fogo/som/explosao"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.9,
+"fogo": 1.0,
+"golpe": 0.9,
+"morrer": 0.9,
+"passos": 0.5,
+"raio": 0.9
+})
+extra = {
+"alcance_tras": 220,
+"raio_frente": [50.0, 185.0],
+"raio_tras": [172.0, 175.0],
+"dano_fogo": 115,
+"minimo_fogo": 2,
+"recarga_fogo": 9,
+"velocidade_fogo": 520
+}

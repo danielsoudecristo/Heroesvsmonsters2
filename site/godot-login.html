@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Heroes vs Monsters · Login</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(ellipse at 50% 0%,#2b2560 0%,#141a36 55%,#0a0d1f 100%);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff4d6}
+  .c{width:100%;max-width:430px;text-align:center;padding:34px 26px 30px;border-radius:28px;
+    background:linear-gradient(#3e4f96,#232c5c);border:5px solid #f6c343;
+    box-shadow:0 0 0 4px #4a2a06,0 18px 40px #000a;animation:e .45s cubic-bezier(.2,1.4,.4,1)}
+  .c.erro{border-color:#ff7a6a}
+  @keyframes e{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+  .l{font-weight:900;font-size:26px;letter-spacing:.5px;margin-bottom:18px;text-shadow:0 3px 0 #24130a}
+  .l .h{color:#ffc43a}.l .m{color:#8be03c}.l .v{color:#fff;font-size:18px;margin:0 6px}
+  .ico{width:76px;height:76px;margin:0 auto}
+  .roda{width:64px;height:64px;margin:6px auto;border-radius:50%;border:8px solid #ffffff22;border-top-color:#f6c343;animation:g 1s linear infinite}
+  @keyframes g{to{transform:rotate(360deg)}}
+  h1{margin:14px 0 10px;font-size:30px;color:#ffd34d;text-shadow:0 3px 0 #24130a}
+  .erro h1{color:#ff9a8a}
+  p{margin:0 0 22px;font-size:18px;line-height:1.45;color:#eef0ff}
+  .d{display:inline-block;padding:12px 18px;border-radius:16px;background:#141a36aa;color:#ffd34d;font-weight:700;font-size:16px}
+  [hidden]{display:none!important}
+  .bt{display:block;margin:4px auto 14px;max-width:320px;padding:16px 20px;border-radius:18px;text-decoration:none;
+    font-weight:900;font-size:21px;color:#fff;text-shadow:0 2px 0 #4a2a06;
+    background:linear-gradient(#ffe98a 0%,#ffc43a 50%,#c97a0c 100%);border:3px solid #4a2a06;box-shadow:0 6px 0 #4a2a06}
+  .bt:active{transform:translateY(4px);box-shadow:0 2px 0 #4a2a06}
+</style>
+</head>
+<body>
+<div class="c" id="caixa">
+  <div class="l"><span class="h">Heroes</span><span class="v">vs</span><span class="m">Monsters</span></div>
+  <div class="roda" id="roda"></div>
+  <svg class="ico" id="ok" viewBox="0 0 64 64" hidden><circle cx="32" cy="32" r="29" fill="#8be03c" stroke="#24130a" stroke-width="4"/><path d="M18 33 l9 9 l19 -20" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <svg class="ico" id="x" viewBox="0 0 64 64" hidden><circle cx="32" cy="32" r="29" fill="#ff7a6a" stroke="#24130a" stroke-width="4"/><path d="M22 22 L42 42 M42 22 L22 42" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg>
+  <h1 id="titulo">Entrando...</h1>
+  <p id="txt">Só um instante.</p>
+  <a class="bt" id="voltar" hidden href="#">Voltar para o jogo ▶</a>
+  <div class="d" id="dica" hidden>Volte para o jogo ▶</div>
+</div>
+<script>
+  /* LOGIN DO JOGO GODOT: o Google volta para cá com ?s=ESTADO&code=...
+     A página só guarda o código no servidor (supabase/10_login_godot_pkce.sql); o jogo pega e termina o login.
+     O código sozinho não serve para nada: só o aparelho que começou o login consegue trocar pela sessão. */
+  var SUPABASE = "https://wrhrtzesfhiwydtmbezq.supabase.co";
+  var CHAVE = "sb_publishable_LzAJ7FOOCOBJWr8DwuyvVg_xsfKCDTP";   // chave pública
+  var $ = function (id) { return document.getElementById(id); };
+  var PAGINA = "https://heroes-vs-monsters.pages.dev/godot-login.html";   // (tem de estar nos Redirect URLs do Supabase)
+  var q = new URLSearchParams(location.search);
+  var h = new URLSearchParams(location.hash.replace(/^#/, ""));
+  // PASSO 1: o jogo abre esta página com ?ini=ESTADO&c=DESAFIO. Ela guarda o estado aqui no navegador
+  // e vai para o Google. Assim a volta do Google é para este endereço EXATO (sem nada depois do "?").
+  if (q.get("ini") && q.get("c")) {
+    try { localStorage.setItem("hvm_godot_login", JSON.stringify({ s: q.get("ini"), t: Date.now() })); } catch (e) {}
+    document.getElementById("titulo").textContent = "Abrindo o Google...";
+    location.replace(SUPABASE + "/auth/v1/authorize?provider=google&prompt=select_account&code_challenge_method=s256" +
+      "&code_challenge=" + encodeURIComponent(q.get("c")) + "&redirect_to=" + encodeURIComponent(PAGINA));
+    throw new Error("indo para o Google");
+  }
+  // PASSO 2: voltou do Google
+  var guardado = null;
+  try { guardado = JSON.parse(localStorage.getItem("hvm_godot_login") || "null"); localStorage.removeItem("hvm_godot_login"); } catch (e) {}
+  if (guardado && Date.now() - guardado.t > 15 * 60 * 1000) guardado = null;
+  var estado = q.get("s") || (guardado && guardado.s);
+  var codigo = q.get("code");
+  var erro = q.get("error_description") || q.get("error") || h.get("error_description") || h.get("error");
+
+  // BOTÃO "Voltar para o jogo": abre o app (Android) pelo endereço heroesvsmonsters://login
+  var PACOTE = "com.danielsoucristo.heroesvsmonsters";
+  var APP = /Android/i.test(navigator.userAgent)
+    ? "intent://login#Intent;scheme=heroesvsmonsters;package=" + PACOTE + ";end"
+    : "heroesvsmonsters://login";
+  function voltarProJogo() { location.href = APP; }
+  function fim(ok, titulo, txt) {
+    $("roda").hidden = true;
+    $(ok ? "ok" : "x").removeAttribute("hidden");
+    $("titulo").textContent = titulo;
+    $("txt").textContent = txt;
+    $("voltar").hidden = false;
+    $("voltar").href = APP;
+    $("voltar").textContent = ok ? "Voltar para o jogo ▶" : "Voltar para o jogo";
+    $("dica").hidden = false;
+    $("dica").textContent = ok ? "Se o botão não abrir, toque no jogo nos apps recentes" : "Tente entrar de novo no jogo";
+    if (ok) setTimeout(voltarProJogo, 900);                          // tenta voltar sozinho para o jogo
+    if (!ok) $("caixa").className = "c erro";
+    history.replaceState(null, "", location.pathname);              // tira o código do endereço
+  }
+  function guardar(valor) {
+    return fetch(SUPABASE + "/rest/v1/rpc/guardar_codigo_godot", {
+      method: "POST",
+      headers: { apikey: CHAVE, Authorization: "Bearer " + CHAVE, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_estado: estado, p_codigo: valor })
+    }).then(function (r) { if (!r.ok) throw new Error("erro " + r.status); });
+  }
+
+  if (!estado) {
+    fim(false, "Link inválido", "Abra o login pelo botão \"Entrar com Google\" dentro do jogo.");
+  } else if (erro) {
+    guardar("erro:" + erro).catch(function () {});
+    fim(false, "Login cancelado", erro.replace(/\+/g, " ") + ".");
+  } else if (!codigo && h.get("refresh_token")) {
+    // (se o servidor devolver a sessão pronta em vez do código, entrega a sessão para o jogo)
+    codigo = "rt:" + h.get("refresh_token");
+    enviar();
+  } else if (!codigo) {
+    fim(false, "Não deu para entrar", "O Google não devolveu o login.");
+  } else {
+    enviar();
+  }
+  function enviar() {
+    var tentar = function (n) {
+      guardar(codigo).then(function () {
+        fim(true, "Login feito!", "Pode voltar para o Heroes vs Monsters: o jogo termina de entrar na sua conta.");
+      }).catch(function (e) {
+        if (n < 3) setTimeout(function () { tentar(n + 1); }, 1500);
+        else fim(false, "Sem internet", "Não deu para avisar o jogo (" + e.message + ").");
+      });
+    };
+    tentar(0);
+  }
+</script>
+</body>
+</html>

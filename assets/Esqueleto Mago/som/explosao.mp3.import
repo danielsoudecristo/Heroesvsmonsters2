@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c14ufw584k6dm"
+path="res://.godot/imported/explosao.mp3-c942a78d8bfa3dc427ba7978c79075c2.mp3str"
+
+[deps]
+
+source_file="res://assets/Esqueleto Mago/som/explosao.mp3"
+dest_files=["res://.godot/imported/explosao.mp3-c942a78d8bfa3dc427ba7978c79075c2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

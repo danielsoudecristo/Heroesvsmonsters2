@@ -1,0 +1,134 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://xn5uam7u6stp"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_emlxh"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Protetor/andando/andando_236x252.png" id="2_dly53"]
+[ext_resource type="Texture2D" uid="uid://cpdnot1purfa1" path="res://assets_otimizados/Guerreiro Protetor/defendendo/defendendo_200x236.png" id="2_emlxh"]
+[ext_resource type="Texture2D" uid="uid://dvxwg1ejfff6d" path="res://assets_otimizados/Guerreiro Protetor/morrendo/morrendo_485x306.png" id="3_kye0i"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="4_mudh7"]
+[ext_resource type="Texture2D" uid="uid://demk74540s6t3" path="res://assets_otimizados/Guerreiro Protetor/lutando/lutando_335x298.png" id="5_lutaa"]
+[ext_resource type="Texture2D" uid="uid://cuc1v3q5huxwy" path="res://assets/Guerreiro Protetor/parado/parado.png" id="6_parad"]
+
+[sub_resource type="Resource" id="Resource_kye0i"]
+script = ExtResource("1_emlxh")
+textura = ExtResource("2_dly53")
+cols = 17
+quadros = 93
+cw = 236
+ch = 252
+ax = 117.9
+ay = 245.9
+fps = 18.0
+escala = 0.980392
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+extra = {
+"laco_de": 23
+}
+
+[sub_resource type="Resource" id="Resource_iypwa"]
+script = ExtResource("1_emlxh")
+textura = ExtResource("2_emlxh")
+cols = 14
+quadros = 150
+cw = 200
+ch = 236
+ax = 109.0
+ay = 234.0
+fps = 30.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_cbi1t"]
+script = ExtResource("1_emlxh")
+textura = ExtResource("3_kye0i")
+cols = 8
+quadros = 104
+cw = 485
+ch = 306
+ax = 237.799017
+ay = 303.855128
+fps = 22.18666666666667
+escala = 0.979079
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array(69)
+quadro_chao = 62
+extra = {
+"quadro_escudo": 7
+}
+
+[sub_resource type="Resource" id="Resource_lutand"]
+script = ExtResource("1_emlxh")
+textura = ExtResource("5_lutaa")
+cols = 11
+quadros = 119
+cw = 335
+ch = 298
+ax = 153.23
+ay = 295.9
+fps = 30.0
+repetir = false
+quadros_acao = PackedInt32Array(41, 83)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parad"]
+script = ExtResource("1_emlxh")
+textura = ExtResource("6_parad")
+cols = 8
+quadros = 8
+cw = 335
+ch = 298
+ax = 153.23
+ay = 295.9
+fps = 10.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("4_mudh7")
+id = "protetor"
+nome = "Protetor G"
+nome_curto = "Protetor"
+descricao = "Ergue o escudo e segura os monstros"
+par = "esqueletoProtetor"
+comportamento = "escudo"
+custo = 75
+recarga = 18.0
+vida = 660
+dano = 20
+alcance = 110.0
+defesa = 0.55
+escala = 0.51
+cores = PackedColorArray(0.85882354, 0.9019608, 0.9843137, 1, 0.24705882, 0.37254903, 0.68235296, 1)
+anims = Dictionary[String, ExtResource("1_emlxh")]({
+"andar": SubResource("Resource_kye0i"),
+"atacar": SubResource("Resource_lutand"),
+"defender": SubResource("Resource_iypwa"),
+"morrer": SubResource("Resource_cbi1t"),
+"parado": SubResource("Resource_parad")
+})
+sons = Dictionary[String, String]({
+"bloqueio": "Guerreiro Protetor/som/bloqueio",
+"escudo": "Guerreiro Protetor/morrendo/som escudo quebrando",
+"morrer": "Guerreiro Protetor/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"bloqueio": 0.7,
+"escudo": 0.8,
+"morrer": 0.8
+})
+extra = {
+"alcance_escudo": 210,
+"andar": {
+"para": 45.0,
+"pausa": 0.35,
+"velocidade": 45.0
+},
+"trechos": {
+"abaixar": [106, 150],
+"levantar": [21, 85],
+"parado": [1, 20],
+"segurar": [86, 105]
+}
+}

@@ -1,0 +1,1559 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel HvM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== CORES (claro / escuro) ===================== */
+:root{
+  color-scheme: light;
+  --bg:#f3f2ef; --surface-1:#fcfcfb; --surface-2:#f0efec; --line:#e2e0db;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#85837d;
+  --accent:#2a78d6;
+  --heroes:#2a78d6; --monsters:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --good:#0ca30c; --warning:#fab219; --critical:#d03b3b;
+  --seq-1:#cde2fb; --seq-2:#86b6ef; --seq-3:#3987e5; --seq-4:#1c5cab;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121211; --surface-1:#1a1a19; --surface-2:#232321; --line:#2f2f2c;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
+    --accent:#3987e5;
+    --heroes:#3987e5; --monsters:#d95926; --s3:#199e70; --s4:#c98500;
+    --seq-1:#184f95; --seq-2:#256abf; --seq-3:#3987e5; --seq-4:#86b6ef;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface-1:#1a1a19; --surface-2:#232321; --line:#2f2f2c;
+  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8d8c84;
+  --accent:#3987e5;
+  --heroes:#3987e5; --monsters:#d95926; --s3:#199e70; --s4:#c98500;
+  --seq-1:#184f95; --seq-2:#256abf; --seq-3:#3987e5; --seq-4:#86b6ef;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text-primary);font:14px/1.45 Inter,system-ui,Segoe UI,Roboto,sans-serif;}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+header.top h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.01em}
+header.top .sub{color:var(--text-muted);font-size:12px}
+.grow{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface-1);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+select,input[type=text],input[type=password]{border:1px solid var(--line);background:var(--surface-1);border-radius:8px;padding:7px 10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tab{padding:9px 14px;border:0;background:none;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--text-primary);border-bottom-color:var(--accent);font-weight:600}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.card h2{font-size:15px;margin:0 0 2px;font-weight:600}
+.card .desc{color:var(--text-muted);font-size:12px;margin:0 0 12px}
+.grid{display:grid;gap:12px;align-items:start}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3,.g2{grid-template-columns:1fr}}
+.kpi .v{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.kpi .l{color:var(--text-secondary);font-size:12px}
+.kpi .n{color:var(--text-muted);font-size:12px;margin-top:2px}
+.mt{margin-top:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg text{fill:var(--text-muted);font-size:11px}
+.chart{position:relative}
+.tip{position:fixed;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:50;display:none;min-width:120px}
+.tip b{display:block;margin-bottom:4px;color:var(--text-primary)}
+.tip .r{display:flex;gap:8px;justify-content:space-between;color:var(--text-secondary)}
+.tip .r i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--text-secondary);font-weight:600;font-size:12px;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface-1)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface-2)}
+.scroll{overflow:auto;max-height:640px}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.st i{width:8px;height:8px;border-radius:50%}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;background:var(--surface-2);font-size:12px;color:var(--text-secondary)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.insights{margin:0;padding:0;list-style:none}
+.insights li{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.insights li:last-child{border:0}
+.insights .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff}
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.feed .t{color:var(--text-muted);font-size:12px;min-width:118px;font-variant-numeric:tabular-nums}
+.feed .ico{width:26px;text-align:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface-1);border-radius:99px;padding:4px 10px;cursor:pointer;font-size:12px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.login{max-width:420px;margin:12vh auto}
+.erro{color:var(--critical);margin-top:8px;min-height:20px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;z-index:40;overflow:auto}
+.modal .card{max-width:760px;width:100%}
+.bar-h{display:grid;grid-template-columns:130px 1fr minmax(70px,auto);gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.bar-h .tr{height:14px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar-h .f{height:100%;border-radius:0 4px 4px 0}
+.bar-h .vv{text-align:right;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.vs{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;margin:6px 0}
+.vs div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;min-width:2px}
+.muted{color:var(--text-muted)}
+.hide{display:none!important}
+.medidor .topo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.medidor .v{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.medidor .lim{color:var(--text-muted);font-size:13px}
+.medidor .barra{position:relative;height:12px;background:var(--surface-2);border-radius:6px;margin:10px 0 8px;overflow:hidden}
+.medidor .barra .f{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.medidor .barra .pr{position:absolute;top:0;bottom:0;border-radius:6px;opacity:.35}
+.medidor .barra .ln{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text-primary);opacity:.5}
+.estado{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;color:#fff}
+.dot-vivo{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--critical);margin-right:6px;vertical-align:1px;animation:pisca 1.4s infinite}
+@keyframes pisca{0%,100%{opacity:1}50%{opacity:.25}}
+.vivo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.vivo-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2);display:flex;gap:10px;align-items:flex-start}
+.vivo-card .av{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff}
+.vivo-card .nm{font-weight:600}
+.vivo-card .at{font-size:13px;margin-top:2px}
+.vivo-card .sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.ativ{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+.loading{opacity:.55;pointer-events:none}
+
+/* ===================== LAYOUT PRO: menu lateral ===================== */
+.wrap{max-width:none;padding:0}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--surface-1);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.marca{display:flex;align-items:center;gap:10px;padding:4px 8px 14px}
+.marca .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--heroes),var(--monsters));font-size:13px;letter-spacing:-.02em}
+.marca b{display:block;font-size:14px}
+.marca span{font-size:11px;color:var(--text-muted)}
+.side .tabs{flex-direction:column;border:0;gap:2px;margin:0;overflow:visible}
+.side .tab{display:flex;align-items:center;gap:10px;border:0;border-radius:8px;padding:9px 10px;text-align:left;width:100%;border-bottom:0}
+.side .tab:hover{background:var(--surface-2);color:var(--text-primary)}
+.side .tab.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text-primary);border:0}
+.side .tab svg{flex:none;width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side .tab .pill{margin-left:auto}
+.side .grupo{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:12px 10px 4px}
+.side .rodape{margin-top:auto;display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid var(--line)}
+.conteudo{padding:20px 24px 40px;min-width:0}
+.conteudo header.top{margin-bottom:16px}
+.conteudo header.top h1{font-size:22px}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:column;border-right:0;border-bottom:1px solid var(--line)}
+  .side .tabs{flex-direction:row;overflow-x:auto}
+  .side .tab{width:auto;white-space:nowrap}
+  .side .grupo,.side .rodape .grupo{display:none}
+  .conteudo{padding:16px}
+}
+.btn.peq{padding:5px 10px;font-size:12px}
+.btn.ver{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* ===================== AO VIVO PRO ===================== */
+.vivo-topo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.vivo-topo h2{margin:0}
+.vivo-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.vcard{border:1px solid var(--line);border-radius:14px;background:var(--surface-1);padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.vcard::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--cor,var(--line))}
+.vcard .cab{display:flex;gap:10px;align-items:center}
+.vcard .av{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;font-size:16px;background-size:cover;background-position:center;position:relative}
+.vcard .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--good);border:2px solid var(--surface-1)}
+.vcard .nm{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcard .mini{font-size:12px;color:var(--text-muted)}
+.vcard .agora{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.conq{display:flex;gap:6px;flex-wrap:wrap}
+.conq span{font-size:12px;padding:3px 8px;border-radius:99px;background:var(--surface-2);color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.conq span b{color:var(--text-primary)}
+.conq .bom{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--text-primary)}
+.conq .ruim{background:color-mix(in srgb,var(--critical) 13%,transparent);color:var(--text-primary)}
+.vcard .ult{font-size:12px;color:var(--text-secondary);border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:3px}
+.vcard .ult div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcard .pe{display:flex;align-items:center;gap:8px}
+.agora-feed{list-style:none;margin:0;padding:0;max-height:520px;overflow:auto}
+.agora-feed li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:flex-start}
+.agora-feed .t{color:var(--text-muted);font-size:12px;min-width:44px;font-variant-numeric:tabular-nums}
+.agora-feed .ico{width:22px;text-align:center}
+
+/* ===================== VISUALIZADOR (assistir ao vivo) ===================== */
+.assistir{position:fixed;inset:0;background:rgba(5,6,12,.72);display:none;align-items:center;justify-content:center;padding:3vh 16px;z-index:45}
+.assistir .caixa{width:min(1240px,100%);max-height:94vh;overflow:auto;background:var(--surface-1);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+@media (max-width:1000px){.assistir .caixa{grid-template-columns:1fr}}
+.tela-jogo{position:relative;border-radius:12px;overflow:hidden;background:#0f1a10;aspect-ratio:16/8;min-height:220px}
+.tela-jogo canvas{width:100%;height:100%;display:block}
+.tela-jogo .aviso{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#e8ecff;font-size:14px;padding:20px;background:rgba(8,10,20,.55)}
+.ao-vivo-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;color:#fff;background:var(--critical);border-radius:6px;padding:3px 8px}
+.hud-v{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.hud-v .c{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.hud-v .l{font-size:11px;color:var(--text-muted)}
+.hud-v .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.barra-v{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:5px}
+.barra-v i{display:block;height:100%;border-radius:5px;transition:width .6s}
+.lado-v h3{font-size:13px;margin:12px 0 6px;color:var(--text-secondary);font-weight:600}
+@media (max-width:700px){.hud-v{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1100px){#vivoCorpo{grid-template-columns:1fr!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= LOGIN ================= -->
+  <div id="telaLogin" class="login card hide">
+    <h2 style="font-size:18px">Painel · Heroes vs Monsters</h2>
+    <p class="desc">Cole a <b>chave do painel</b> (está no arquivo <code>supabase/16_painel.sql</code>). Ela fica guardada só neste computador.</p>
+    <div class="row"><input id="inChave" type="password" placeholder="HVM-..." style="flex:1"><button class="btn primary" id="btEntrar">Entrar</button></div>
+    <div class="erro" id="erroLogin"></div>
+    <p class="desc" style="margin-top:8px">Quer só ver como fica? Digite <b>demo</b>.</p>
+  </div>
+
+  <!-- ================= PAINEL ================= -->
+  <div id="telaPainel" class="hide app">
+   <aside class="side">
+    <div class="marca"><div class="logo">HvM</div><div><b>Painel do jogo</b><span>Heroes vs Monsters</span></div></div>
+    <nav class="tabs" id="abas">
+      <div class="grupo">Agora</div>
+      <button class="tab on" data-aba="vivo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7"/></svg>Ao vivo <span class="pill" id="pillVivo">—</span></button>
+      <div class="grupo">Números</div>
+      <button class="tab" data-aba="geral"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Visão geral</button>
+      <button class="tab" data-aba="jogadores"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Jogadores</button>
+      <button class="tab" data-aba="curtem"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>O que curtem</button>
+      <button class="tab" data-aba="jogo"><svg viewBox="0 0 24 24"><path d="M4 20l7-7M4 14l6 6M20 4l-9 9M14 4h6v6"/></svg>PvP e Campanha</button>
+      <button class="tab" data-aba="personagens"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 16.5l-5.2 2.8 1-5.9L3.5 9.3l5.9-.9z"/></svg>Personagens</button>
+      <button class="tab" data-aba="registro"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h4"/></svg>Registro</button>
+      <div class="grupo">Servidor</div>
+      <button class="tab" data-aba="creditos"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Créditos Supabase <span class="pill" id="pillCred">—</span></button>
+    </nav>
+    <div class="rodape">
+      <select id="selDias" title="Período">
+        <option value="7">Últimos 7 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+        <option value="365">Último ano</option>
+      </select>
+      <label class="row muted" style="font-size:12px"><input type="checkbox" id="chkAuto"> atualizar sozinho (1 min)</label>
+      <div class="row"><button class="btn peq" id="btAtualizar">Atualizar</button><button class="btn peq" id="btTema" title="Claro / escuro">Tema</button><button class="btn peq" id="btSair">Sair</button></div>
+    </div>
+   </aside>
+   <main class="conteudo">
+    <header class="top">
+      <div>
+        <h1 id="tituloAba">Ao vivo</h1>
+        <div class="sub" id="atualizado">—</div>
+      </div>
+    </header>
+
+    <!-- VISÃO GERAL -->
+    <section data-sec="geral" class="hide">
+      <div class="grid g4" id="kpis"></div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>O que os números dizem</h2>
+          <p class="desc">Conclusões automáticas do período escolhido.</p>
+          <ul class="insights" id="insights"></ul>
+        </div>
+        <div class="card">
+          <h2>Jogadores ativos por dia</h2>
+          <p class="desc">Quantas pessoas diferentes jogaram em cada dia.</p>
+          <div class="chart" id="chAtivos"></div>
+        </div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Partidas por dia</h2>
+          <p class="desc">O que as pessoas mais jogam.</p>
+          <div class="legend" id="lgPartidas"></div>
+          <div class="chart" id="chPartidas"></div>
+        </div>
+        <div class="card">
+          <h2>Que horas o pessoal joga</h2>
+          <p class="desc">Acessos por hora do dia (horário de Brasília).</p>
+          <div class="chart" id="chHora"></div>
+        </div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Ligas</h2>
+          <p class="desc">Quantas contas estão em cada liga agora.</p>
+          <div id="ligas"></div>
+        </div>
+        <div class="card">
+          <h2>Contas novas por dia</h2>
+          <p class="desc">Cadastros no período.</p>
+          <div class="chart" id="chNovos"></div>
+        </div>
+      </div>
+      <div class="card mt">
+        <h2>Convites (indicação)</h2>
+        <p class="desc">Quantas pessoas entraram pelo código de um amigo e quem mais traz gente para o jogo.</p>
+        <div class="grid g3" id="convites"></div>
+      </div>
+      <div class="card mt">
+        <h2>Tutorial dos novatos</h2>
+        <p class="desc">Quantas pessoas começaram, terminaram ou pularam o tutorial, e em que parte elas pulam.</p>
+        <div class="grid g3" id="tutorial"></div>
+      </div>
+    </section>
+
+    <!-- AO VIVO -->
+    <section data-sec="vivo">
+      <div class="grid g4" id="vivoKpis"></div>
+      <div class="grid mt" style="grid-template-columns:minmax(0,1fr) 340px" id="vivoCorpo">
+        <div class="card">
+          <div class="vivo-topo"><span class="ao-vivo-tag"><span class="dot-vivo" style="background:#fff;margin:0"></span>AO VIVO</span><h2>Quem está jogando agora</h2><div class="grow"></div><span class="muted" id="vivoHora" style="font-size:12px"></span></div>
+          <p class="desc">Atualiza a cada 10 segundos. Em cada pessoa: o que está fazendo agora e o que já conseguiu desde que abriu o jogo. Clique em <b>Assistir</b> para ver a partida dela ao vivo.</p>
+          <div class="chips" id="vivoFiltro" style="margin-bottom:12px"></div>
+          <div class="vivo-grid" id="vivoLista"></div>
+        </div>
+        <div class="card">
+          <h2>Acontecendo agora</h2>
+          <p class="desc">O que o pessoal online acabou de fazer.</p>
+          <ul class="agora-feed" id="vivoFeed"></ul>
+        </div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Versões instaladas</h2>
+          <p class="desc">Quem abriu o jogo nos últimos 30 dias, por versão. Mostra quantos já atualizaram.</p>
+          <div id="versoes"></div>
+        </div>
+        <div class="card">
+          <h2>Aviso de atualização no jogo</h2>
+          <p class="desc">O jogo mostra a janela "Nova atualização" (da Play Store) com estas novidades. Quem tiver o <b>código</b> menor que a versão mínima é <b>obrigado</b> a atualizar (use quando mudar o PvP online). 0 = nunca obriga.</p>
+          <div class="row" style="margin-bottom:8px">
+            <label class="muted" style="font-size:12px">Nome da versão<br><input type="text" id="vNome" style="width:110px" placeholder="1.3"></label>
+            <label class="muted" style="font-size:12px">Versão mínima (código)<br><input type="text" id="vMin" style="width:110px" placeholder="0"></label>
+          </div>
+          <label class="muted" style="font-size:12px">Novidades (uma por linha)</label>
+          <textarea id="vNov" rows="5" style="width:100%;border:1px solid var(--line);background:var(--surface-1);border-radius:8px;padding:8px;color:inherit;font:inherit;margin-top:4px"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn primary" id="vSalvar">Salvar</button><span class="muted" id="vMsg" style="font-size:12px"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- O QUE CURTEM -->
+    <section data-sec="curtem" class="hide">
+      <div class="grid g2">
+        <div class="card">
+          <h2>Modos mais jogados</h2>
+          <p class="desc">Partidas no período em cada modo.</p>
+          <div id="gModos"></div>
+        </div>
+        <div class="card">
+          <h2>Telas mais abertas</h2>
+          <p class="desc">O que chama atenção no menu (e o que ninguém abre).</p>
+          <div id="gTelas"></div>
+        </div>
+      </div>
+      <div class="card mt">
+        <h2>Cartas mais usadas</h2>
+        <p class="desc">Quantas vezes cada personagem foi colocado em campo e a % de vitória das partidas em que foi usado. Muito usado e vence muito = pode estar forte demais. Quase ninguém usa = pode estar fraco ou caro.</p>
+        <div class="legend"><span><i style="background:var(--heroes)"></i>Heroes</span><span><i style="background:var(--monsters)"></i>Monsters</span></div>
+        <div class="scroll"><table id="gCartas"></table></div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Onde a galera desiste</h2>
+          <p class="desc">Quem saiu no meio da partida, por modo.</p>
+          <div id="gDesiste"></div>
+        </div>
+        <div class="card">
+          <h2>Social</h2>
+          <p class="desc">Conversas, amizades e duelos no período.</p>
+          <div id="gSocial"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRÉDITOS -->
+    <section data-sec="creditos" class="hide">
+      <div class="card" id="credResumo"></div>
+      <div class="grid g3 mt" id="credMedidores"></div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Mensagens do Realtime por dia</h2>
+          <p class="desc">O que mais gasta: cada partida online troca ~4.000 mensagens (Cerco online, o dobro).</p>
+          <div class="chart" id="chCredMsgs"></div>
+        </div>
+        <div class="card">
+          <h2>O que ocupa o banco</h2>
+          <p class="desc">As tabelas maiores. A faxina automática limpa registros velhos.</p>
+          <div id="credBanco"></div>
+        </div>
+      </div>
+      <div class="card mt">
+        <h2>Como ler e o que fazer</h2>
+        <ul class="insights" id="credDicas"></ul>
+        <p class="desc" style="margin-top:10px">Estes números são uma <b>estimativa</b> feita com os registros do jogo. O número exato fica no Supabase: no projeto, <b>Settings → Usage</b> (ou na organização, <b>Usage</b>).</p>
+      </div>
+    </section>
+
+    <!-- JOGADORES -->
+    <section data-sec="jogadores" class="hide">
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <input type="text" id="busca" placeholder="Procurar pelo nome..." style="flex:1;min-width:180px">
+          <div class="chips" id="filtroJog">
+            <button class="chip on" data-f="todos">Todos</button>
+            <button class="chip" data-f="ativos">Ativos</button>
+            <button class="chip" data-f="sumindo">Sumindo</button>
+            <button class="chip" data-f="inativos">Inativos</button>
+            <button class="chip" data-f="contas">Com conta</button>
+            <button class="chip" data-f="convidados">Convidados</button>
+          </div>
+          <button class="btn" id="btCsv">Baixar planilha (CSV)</button>
+        </div>
+        <p class="desc"><b>Ativo</b> = jogou nos últimos 3 dias · <b>Sumindo</b> = 3 a 7 dias · <b>Inativo</b> = mais de 7 dias. Clique numa pessoa para ver tudo dela.</p>
+        <div class="scroll"><table id="tabJog"></table></div>
+      </div>
+    </section>
+
+    <!-- PVP E CAMPANHA -->
+    <section data-sec="jogo" class="hide">
+      <div class="grid g2">
+        <div class="card">
+          <h2>Heroes x Monsters — PvP online</h2>
+          <p class="desc">Quem vence mais. Perto de 50% = jogo equilibrado.</p>
+          <div id="ladosOnline"></div>
+        </div>
+        <div class="card">
+          <h2>Heroes x Monsters — contra o bot</h2>
+          <p class="desc">Qual lado o pessoal escolhe e quanto vence com cada um.</p>
+          <div id="ladosBot"></div>
+        </div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h2>Bot: vitórias por nível</h2>
+          <p class="desc">Se a % cai muito de um nível para o outro, o bot ficou difícil demais ali.</p>
+          <div class="chart" id="chBot"></div>
+        </div>
+        <div class="card">
+          <h2>Campanha: onde o pessoal perde</h2>
+          <p class="desc">Níveis com mais derrotas (todas as dificuldades).</p>
+          <div class="chart" id="chPerdem"></div>
+        </div>
+      </div>
+      <div class="card mt">
+        <h2>Campanha por dificuldade</h2>
+        <p class="desc">Níveis vencidos e derrotas no período.</p>
+        <div class="scroll"><table id="tabCamp"></table></div>
+      </div>
+      <div class="card mt">
+        <h2>Saúde do PvP online</h2>
+        <p class="desc">Partidas com resultado diferente nos dois celulares (possível trapaça ou bug) e partidas que nunca terminaram.</p>
+        <div id="saudePvp"></div>
+      </div>
+    </section>
+
+    <!-- PERSONAGENS -->
+    <section data-sec="personagens" class="hide">
+      <div class="card">
+        <h2>Personagens mais evoluídos</h2>
+        <p class="desc">Quantas pessoas evoluíram cada personagem e até que nível. Mostra quais o pessoal mais gosta.</p>
+        <div class="legend"><span><i style="background:var(--heroes)"></i>Heroes</span><span><i style="background:var(--monsters)"></i>Monsters</span></div>
+        <div id="persBarras"></div>
+      </div>
+      <div class="card mt">
+        <div class="scroll"><table id="tabPers"></table></div>
+      </div>
+    </section>
+
+    <!-- REGISTRO -->
+    <section data-sec="registro" class="hide">
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <input type="text" id="buscaReg" placeholder="Procurar pelo nome..." style="flex:1;min-width:180px">
+          <div class="chips" id="filtroReg"></div>
+        </div>
+        <ul class="feed" id="feed"></ul>
+      </div>
+    </section>
+   </main>
+  </div>
+</div>
+
+<!-- VISUALIZADOR: assistir a partida de alguém ao vivo -->
+<div class="assistir" id="assistir">
+  <div class="caixa">
+    <div>
+      <div class="vivo-topo">
+        <span class="ao-vivo-tag"><span class="dot-vivo" style="background:#fff;margin:0"></span>AO VIVO</span>
+        <h2 id="asNome" style="font-size:18px">—</h2>
+        <span class="muted" id="asSub" style="font-size:13px"></span>
+        <div class="grow"></div>
+        <button class="btn" id="asFechar">Fechar</button>
+      </div>
+      <div class="tela-jogo"><canvas id="asTela" width="1200" height="600"></canvas><div class="aviso" id="asAviso">Conectando...</div></div>
+      <div class="hud-v" id="asHud"></div>
+    </div>
+    <div class="lado-v">
+      <h3>Nesta sessão</h3>
+      <div class="conq" id="asConq"></div>
+      <h3>O que aconteceu</h3>
+      <ul class="agora-feed" id="asFeed" style="max-height:420px"></ul>
+      <p class="desc" style="margin-top:10px">O jogo da pessoa manda uma foto da partida a cada 2,5 s enquanto você assiste. Fechou esta janela, ele para de mandar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- detalhes de um jogador -->
+<div class="modal" id="modal"><div class="card" id="modalCard"></div></div>
+<div class="tip" id="tip"></div>
+
+<script>
+// ======================================================================
+//  CONFIGURAÇÃO (a mesma do jogo: scripts/sistema/conta.gd)
+// ======================================================================
+const SUPABASE = "https://wrhrtzesfhiwydtmbezq.supabase.co";
+const CHAVE_API = "sb_publishable_LzAJ7FOOCOBJWr8DwuyvVg_xsfKCDTP";
+
+const NOMES = {elara:"Elara",nick:"Nick",arqueiro:"Arqueiro",protetor:"Protetor G",mago:"Mago",magoFogo:"Mago de Fogo",sentinela:"Cavaleiro Sentinela",
+  engenheiro:"Engenheiro Arcano",darian:"Guerreiro Darian",aura:"Guerreira Aura",
+  esqueletoBlack:"Esqueleto Black",esqueleto:"Esqueleto",esqueletoFogo:"Esqueleto de Fogo",esqueletoArqueiro:"Esqueleto Arqueiro",esqueletoProtetor:"Esqueleto Protetor",esqueletoMago:"Esqueleto Mago",esqueletoTita:"Esqueleto Titã",
+  esqueletoBombardeiro:"Esqueleto Bombardeiro",golemOssos:"Golem de Ossos",esqueletoMistico:"Esqueleto Místico"};
+const HEROES = ["elara","nick","arqueiro","protetor","mago","magoFogo","sentinela","engenheiro","darian","aura"];
+const DIFS = {facil:"Fácil",medio:"Médio",dificil:"Difícil",hardcore:"HardCore"};
+const TUT_JOGO = {inicio:"Início",energia:"Pegar energia",painel:"Painel de energia",carta_elara:"Carta da Elara",casa_elara:"Colocar a Elara",elara_ok:"Elara colocada",
+  carta_guerreiro:"Carta do Arqueiro",casa_guerreiro:"Colocar o Arqueiro",luta:"Primeira luta",castelo:"Vida do castelo",horda:"Força da horda",espiar:"Espiar",cartas:"Cartas",fim:"Final"};
+const TUT_MENU = ["Boas-vindas","Perfil","Campanha","PvP","Personagens","Ranking","Ligas","Bônus do dia","Social","Convide amigos","Opções","Trocar de lado","Novo jogo","Dificuldade"];
+const nomePasso = (parte, p) => parte === "menu" ? (TUT_MENU[+p] || ("passo " + p)) : (TUT_JOGO[p] || p);
+const LIGAS = [["Bronze",0],["Prata",400],["Ouro",800],["Diamante",1500],["Mestre",2500],["Campeão",4000],["Lendas",6000],["Leões FC",8000]];
+const ligaDe = t => { let l = LIGAS[0][0]; for (const [n,m] of LIGAS) if ((t||0) >= m) l = n; return l; };
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = n => (n ?? 0).toLocaleString("pt-BR");
+const pct = (a,b) => b ? Math.round(100*a/b) + "%" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function tempo(seg){ seg = Math.round(seg||0); if (seg < 60) return seg + " s"; const m = Math.round(seg/60); if (m < 60) return m + " min"; const h = Math.floor(m/60); return h + " h " + (m%60) + " min"; }
+function quando(iso){
+  if (!iso) return "nunca";
+  const d = (Date.now() - new Date(iso).getTime())/1000;
+  if (d < 60) return "agora"; if (d < 3600) return Math.floor(d/60) + " min atrás";
+  if (d < 86400) return Math.floor(d/3600) + " h atrás"; const dd = Math.floor(d/86400);
+  return dd === 1 ? "ontem" : dd + " dias atrás";
+}
+const dataHora = iso => new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+const diaCurto = d => { const [y,m,dd] = d.split("-"); return dd + "/" + m; };
+function status(iso){
+  if (!iso) return {t:"Nunca jogou", c:"var(--text-muted)", k:"inativos"};
+  const dias = (Date.now() - new Date(iso).getTime())/86400000;
+  if (dias <= 3) return {t:"Ativo", c:"var(--good)", k:"ativos"};
+  if (dias <= 7) return {t:"Sumindo", c:"var(--warning)", k:"sumindo"};
+  return {t:"Inativo", c:"var(--text-muted)", k:"inativos"};
+}
+
+// ======================================================================
+//  GUARDAR A CHAVE (só neste computador)
+// ======================================================================
+const guardar = {
+  ler(){ try { return localStorage.getItem("hvm_painel_chave") || ""; } catch(e){ return ""; } },
+  pôr(v){ try { localStorage.setItem("hvm_painel_chave", v); } catch(e){} },
+  tirar(){ try { localStorage.removeItem("hvm_painel_chave"); } catch(e){} },
+};
+let chave = guardar.ler();
+let D = null;            // dados do servidor
+let timer = null;
+
+async function buscar(){
+  const dias = +$("#selDias").value;
+  if (chave.toLowerCase() === "demo") return demo(dias);
+  const r = await fetch(SUPABASE + "/rest/v1/rpc/painel_dados", {
+    method:"POST",
+    headers:{"apikey":CHAVE_API, "Content-Type":"application/json"},
+    body: JSON.stringify({p_chave: chave, p_dias: dias})
+  });
+  const txt = await r.text();
+  let j = null; try { j = JSON.parse(txt); } catch(e){}
+  if (!r.ok){
+    const msg = (j && (j.message || j.msg)) || txt;
+    if (/chave errada/.test(msg)) throw new Error("Chave errada.");
+    if (/painel_dados|function|schema cache/i.test(msg)) throw new Error("O servidor ainda não tem o painel. Rode o arquivo supabase/16_painel.sql no Supabase.");
+    throw new Error(msg || ("Erro " + r.status));
+  }
+  try {
+    const r2 = await fetch(SUPABASE + "/rest/v1/rpc/painel_indicacoes", {method:"POST",
+      headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave})});
+    if (r2.ok) j.indicacoes = await r2.json();
+  } catch(e){}
+  try {
+    const r4 = await fetch(SUPABASE + "/rest/v1/rpc/painel_tamanho", {method:"POST",
+      headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave})});
+    if (r4.ok) j.tamanho = await r4.json();
+  } catch(e){}
+  try {
+    const r5 = await fetch(SUPABASE + "/rest/v1/rpc/painel_creditos", {method:"POST",
+      headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave})});
+    if (r5.ok) j.creditos = await r5.json();
+  } catch(e){}
+  try {
+    const r6 = await fetch(SUPABASE + "/rest/v1/rpc/painel_versao", {method:"POST",
+      headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave})});
+    if (r6.ok) j.versao = await r6.json();
+  } catch(e){}
+  try {
+    const r3 = await fetch(SUPABASE + "/rest/v1/rpc/painel_gosto", {method:"POST",
+      headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave, p_dias: dias})});
+    if (r3.ok) j.gosto = await r3.json();
+  } catch(e){}
+  return j;
+}
+
+async function carregar(){
+  document.body.classList.add("loading");
+  try {
+    D = await buscar();
+    $("#telaLogin").classList.add("hide");
+    $("#telaPainel").classList.remove("hide");
+    desenharTudo();
+    if (!timerVivo) ligarVivo();
+    $("#atualizado").textContent = "Atualizado " + new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) + (chave.toLowerCase()==="demo" ? " · DADOS DE EXEMPLO" : "")
+      + (D.tamanho ? ` · Banco: ${fmt(D.tamanho.banco_mb)} MB de 500 MB (grátis)` : "");
+  } catch(e){
+    if ($("#telaPainel").classList.contains("hide")){
+      $("#erroLogin").textContent = e.message;
+      $("#telaLogin").classList.remove("hide");
+    } else {
+      $("#atualizado").textContent = "Erro ao atualizar: " + e.message;
+    }
+  } finally {
+    document.body.classList.remove("loading");
+  }
+}
+
+$("#btEntrar").onclick = () => { chave = $("#inChave").value.trim(); if (!chave) return; guardar.pôr(chave); $("#erroLogin").textContent = ""; carregar(); };
+$("#inChave").addEventListener("keydown", e => { if (e.key === "Enter") $("#btEntrar").click(); });
+$("#btSair").onclick = () => { guardar.tirar(); chave = ""; location.reload(); };
+$("#btAtualizar").onclick = carregar;
+$("#selDias").onchange = carregar;
+$("#chkAuto").onchange = e => { clearInterval(timer); if (e.target.checked) timer = setInterval(carregar, 60000); };
+$("#btTema").onclick = () => {
+  const r = document.documentElement;
+  const escuro = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  r.dataset.theme = escuro ? "light" : "dark";
+  try { localStorage.setItem("hvm_painel_tema", r.dataset.theme); } catch(e){}
+  if (D) desenharTudo();
+};
+try { const t = localStorage.getItem("hvm_painel_tema"); if (t) document.documentElement.dataset.theme = t; } catch(e){}
+
+$$("#abas .tab").forEach(b => b.addEventListener("click", () => { if (b.dataset.aba === "vivo") ligarVivo(); }));
+$$("#abas .tab").forEach(b => b.onclick = () => {
+  $$("#abas .tab").forEach(x => x.classList.toggle("on", x === b));
+  $("#tituloAba").textContent = [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim();
+  $$("section[data-sec]").forEach(s => s.classList.toggle("hide", s.dataset.sec !== b.dataset.aba));
+  if (D) desenharTudo();     // (gráficos precisam da largura certa)
+});
+
+// ======================================================================
+//  TOOLTIP
+// ======================================================================
+const tip = $("#tip");
+function mostrarTip(ev, titulo, linhas){
+  tip.innerHTML = "<b>" + esc(titulo) + "</b>" + linhas.map(([cor,n,v]) =>
+    `<div class="r"><span>${cor ? `<i style="background:${cor}"></i>` : ""}${esc(n)}</span><span>${esc(v)}</span></div>`).join("");
+  tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const esconderTip = () => tip.style.display = "none";
+
+// ======================================================================
+//  GRÁFICOS (SVG simples)
+// ======================================================================
+function eixoMax(v){ if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const k of [1,2,2.5,5,10]) if (k*p >= v) return k*p; return v; }
+
+// barras (empilhadas ou simples) por categoria. series: [{nome, cor, valores[]}]
+function barras(el, rotulos, series, opt = {}){
+  const box = typeof el === "string" ? $(el) : el;
+  const W = Math.max(280, box.clientWidth || 600), H = opt.h || 220;
+  const n = rotulos.length;
+  const tot = rotulos.map((_,i) => series.reduce((a,s) => a + (s.valores[i]||0), 0));
+  const max = eixoMax(Math.max(1, ...tot));
+  const m = {l: Math.max(34, 12 + 7 * fmt(max).length), r:8, t:10, b:24};
+  const bw = (W - m.l - m.r) / n;
+  const larg = Math.max(2, Math.min(28, bw * 0.7));
+  const y = v => m.t + (H - m.t - m.b) * (1 - v/max);
+  let s = `<svg width="${W}" height="${H}" role="img">`;
+  for (let k = 0; k <= 4; k++){
+    const v = max*k/4, yy = y(v);
+    s += `<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" stroke="${css("--line")}" stroke-width="1"/>`;
+    s += `<text x="${m.l-6}" y="${yy+4}" text-anchor="end">${fmt(Math.round(v*10)/10)}</text>`;
+  }
+  const passo = Math.ceil(n / Math.floor((W - m.l) / 46));
+  rotulos.forEach((r,i) => {
+    const cx = m.l + bw*i + bw/2;
+    let base = 0;
+    series.forEach((se, si) => {
+      const v = se.valores[i] || 0; if (!v) return;
+      const y0 = y(base), y1 = y(base + v);
+      const topo = si === series.length - 1 || series.slice(si+1).every(o => !(o.valores[i]||0));
+      const h = Math.max(1, y0 - y1 - (base > 0 ? 2 : 0));
+      const rr = topo ? Math.min(4, larg/2, h) : 0;
+      const x = cx - larg/2, yt = y1;
+      s += rr ? `<path d="M${x},${yt+h} V${yt+rr} Q${x},${yt} ${x+rr},${yt} H${x+larg-rr} Q${x+larg},${yt} ${x+larg},${yt+rr} V${yt+h} Z" fill="${se.cor}"/>`
+              : `<rect x="${x}" y="${yt}" width="${larg}" height="${h}" fill="${se.cor}"/>`;
+      base += v;
+    });
+    if (i % passo === 0) s += `<text x="${cx}" y="${H-6}" text-anchor="middle">${esc(r)}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${m.l + bw*i}" y="${m.t}" width="${bw}" height="${H-m.t-m.b}" fill="transparent"/>`;
+  });
+  s += `</svg>`;
+  box.innerHTML = s;
+  box.querySelectorAll(".hit").forEach(h => {
+    const i = +h.dataset.i;
+    h.onmousemove = ev => mostrarTip(ev, opt.titulo ? opt.titulo(i) : rotulos[i],
+      (opt.linhas ? opt.linhas(i) : series.map(se => [se.cor, se.nome, fmt(se.valores[i]||0)])));
+    h.onmouseleave = esconderTip;
+  });
+}
+
+// linha com área leve
+function linha(el, rotulos, valores, cor, nome, opt = {}){
+  const box = $(el);
+  const W = Math.max(280, box.clientWidth || 600), H = opt.h || 220;
+  const m = {l:34, r:10, t:12, b:24};
+  const n = rotulos.length, max = eixoMax(Math.max(1, ...valores));
+  const x = i => m.l + (n <= 1 ? 0 : (W - m.l - m.r) * i/(n-1));
+  const y = v => m.t + (H - m.t - m.b) * (1 - v/max);
+  let s = `<svg width="${W}" height="${H}">`;
+  for (let k = 0; k <= 4; k++){
+    const v = max*k/4, yy = y(v);
+    s += `<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" stroke="${css("--line")}"/><text x="${m.l-6}" y="${yy+4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const pts = valores.map((v,i) => `${x(i)},${y(v)}`).join(" ");
+  s += `<polygon points="${x(0)},${y(0)} ${pts} ${x(n-1)},${y(0)}" fill="${cor}" opacity=".12"/>`;
+  s += `<polyline points="${pts}" fill="none" stroke="${cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const passo = Math.ceil(n / Math.floor((W - m.l) / 46));
+  rotulos.forEach((r,i) => { if (i % passo === 0) s += `<text x="${x(i)}" y="${H-6}" text-anchor="middle">${esc(r)}</text>`; });
+  s += `<line id="cx" x1="0" x2="0" y1="${m.t}" y2="${H-m.b}" stroke="${css("--text-muted")}" stroke-dasharray="3 3" opacity="0"/>`;
+  s += `<circle id="cp" r="5" fill="${cor}" stroke="${css("--surface-1")}" stroke-width="2" opacity="0"/>`;
+  s += `<rect id="hit" x="${m.l}" y="0" width="${W-m.l-m.r}" height="${H}" fill="transparent"/></svg>`;
+  box.innerHTML = s;
+  const hit = box.querySelector("#hit"), cx = box.querySelector("#cx"), cp = box.querySelector("#cp");
+  hit.onmousemove = ev => {
+    const r = hit.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n-1, Math.round((ev.clientX - r.left) / r.width * (n-1))));
+    cx.setAttribute("x1", x(i)); cx.setAttribute("x2", x(i)); cx.setAttribute("opacity", 1);
+    cp.setAttribute("cx", x(i)); cp.setAttribute("cy", y(valores[i])); cp.setAttribute("opacity", 1);
+    mostrarTip(ev, opt.titulo ? opt.titulo(i) : rotulos[i], [[cor, nome, fmt(valores[i])]].concat(opt.extra ? opt.extra(i) : []));
+  };
+  hit.onmouseleave = () => { esconderTip(); cx.setAttribute("opacity",0); cp.setAttribute("opacity",0); };
+}
+
+// barras horizontais em HTML
+function barrasH(lista, cor){   // lista: [{nome, v, txt, cor?, dica?}]
+  const max = Math.max(1, ...lista.map(x => x.v));
+  return lista.map(x => `<div class="bar-h" ${x.dica ? `title="${esc(x.dica)}"` : ""}><span>${esc(x.nome)}</span>
+    <div class="tr"><div class="f" style="width:${(100*x.v/max).toFixed(1)}%;background:${x.cor || cor}"></div></div>
+    <span class="vv">${esc(x.txt ?? fmt(x.v))}</span></div>`).join("") || `<p class="muted">Sem dados ainda.</p>`;
+}
+
+// ======================================================================
+//  DESENHAR
+// ======================================================================
+function desenharTudo(){
+  esconderTip();
+  const aba = $("#abas .tab.on").dataset.aba;
+  if (aba === "geral") geral();
+  if (aba === "vivo") vivo();
+  if (aba === "curtem") curtem();
+  if (aba === "creditos") creditos();
+  if (aba === "jogadores") jogadores();
+  if (aba === "jogo") jogo();
+  if (aba === "personagens") personagens();
+  if (aba === "registro") registro();
+}
+
+function geral(){
+  const R = D.resumo, dias = D.dias;
+  const j = D.jogadores || [];
+  const sessMed = R.sessoes ? R.segundos / R.sessoes : 0;
+  const kp = [
+    ["Contas", fmt(R.contas), `+${fmt(R.novas_7d)} nos últimos 7 dias`],
+    ["Convidados (sem conta)", fmt(R.convidados), "jogam sem entrar numa conta"],
+    ["Ativos hoje", fmt(R.ativos_hoje), `${fmt(R.ativos_7d)} na semana · ${fmt(R.ativos_30d)} no mês`],
+    ["Acessos", fmt(R.acessos), `em ${dias} dias`],
+    ["Tempo médio por vez", tempo(sessMed), `${tempo(R.segundos)} jogados no total`],
+    ["PvP online", fmt(R.pvp_online), `+ ${fmt(R.duelos)} duelos entre amigos`],
+    ["PvP contra o bot", fmt(R.pvp_bot), "partidas"],
+    ["Campanha", fmt(R.camp_niveis), `níveis vencidos · ${fmt(R.camp_derrotas)} derrotas`],
+  ];
+  $("#kpis").innerHTML = kp.map(([l,v,n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join("");
+
+  const pd = D.por_dia || [];
+  const rot = pd.map(d => diaCurto(d.dia));
+  linha("#chAtivos", rot, pd.map(d => d.ativos), css("--heroes"), "Ativos", {
+    titulo: i => new Date(pd[i].dia + "T12:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}),
+    extra: i => [[null,"Acessos",fmt(pd[i].acessos)],[null,"Tempo jogado",tempo(pd[i].segundos)]]
+  });
+  const se = [
+    {nome:"PvP online", cor:css("--heroes"), valores: pd.map(d => d.pvp_online + d.duelos)},
+    {nome:"Contra o bot", cor:css("--monsters"), valores: pd.map(d => d.pvp_bot)},
+    {nome:"Campanha (níveis)", cor:css("--s3"), valores: pd.map(d => d.camp_niveis + d.camp_derrotas)},
+  ];
+  $("#lgPartidas").innerHTML = se.map(s => `<span><i style="background:${s.cor}"></i>${s.nome}</span>`).join("");
+  barras("#chPartidas", rot, se);
+  const ph = D.por_hora || [];
+  barras("#chHora", ph.map(h => h.hora + "h"), [{nome:"Acessos", cor:css("--heroes"), valores: ph.map(h => h.acessos)}],
+    {titulo: i => `${ph[i].hora}h às ${ph[i].hora+1}h`});
+  barras("#chNovos", rot, [{nome:"Contas novas", cor:css("--s3"), valores: pd.map(d => d.novos)}]);
+
+  const lg = D.ligas || {};
+  $("#ligas").innerHTML = barrasH(LIGAS.map(([n]) => ({nome:n, v: lg[n] || 0})).filter((x,i) => x.v || i < 3), css("--seq-3"));
+
+  const IN = D.indicacoes;
+  if (!IN) $("#convites").innerHTML = `<p class="muted">Rode o arquivo supabase/18_indicacao.sql para ver os convites.</p>`;
+  else {
+    const top = (IN.top || []).slice(0, 8);
+    $("#convites").innerHTML = `<div class="kpi"><div class="l">Entraram por convite</div><div class="v">${fmt(IN.total)}</div><div class="n">${fmt(IN.jogaram)} jogaram de verdade (${pct(IN.jogaram, IN.total)})</div></div>`
+      + `<div style="grid-column:span 2"><h2 style="font-size:14px">Quem mais convida</h2>${top.length ? barrasH(top.map(x => ({nome: x.nome, v: x.total, cor: css("--monsters"), txt: `${fmt(x.total)} (${fmt(x.jogaram)} jogaram)`}))) : '<p class="muted">Ninguém convidou ainda.</p>'}</div>`;
+  }
+  const T = D.tutorial || {}, TP = D.tutorial_pulos || [];
+  const blocoTut = (parte, titulo) => { const t = T[parte] || {comecou:0, terminou:0, pulou:0};
+    return `<div><h2 style="font-size:14px">${titulo}</h2>` + barrasH([
+      {nome:"Começaram", v:t.comecou, cor:css("--heroes")},
+      {nome:"Terminaram", v:t.terminou, cor:css("--good"), txt: `${fmt(t.terminou)} (${pct(t.terminou, t.comecou)})`},
+      {nome:"Pularam", v:t.pulou, cor:css("--warning"), txt: `${fmt(t.pulou)} (${pct(t.pulou, t.comecou)})`}]) + `</div>`; };
+  const pulos = TP.slice(0, 6).map(x => ({nome: (x.parte === "menu" ? "Menu: " : "Batalha: ") + nomePasso(x.parte, x.passo), v: x.n, cor: css("--monsters")}));
+  $("#tutorial").innerHTML = blocoTut("menu", "Tutorial do menu") + blocoTut("jogo", "Primeira batalha guiada")
+    + `<div><h2 style="font-size:14px">Onde mais pulam</h2>${pulos.length ? barrasH(pulos) : '<p class="muted">Ninguém pulou ainda.</p>'}</div>`;
+
+  // ---------- conclusões
+  const ins = [];
+  const add = (cor, ic, txt) => ins.push(`<li><span class="ic" style="background:${cor}">${ic}</span><span>${txt}</span></li>`);
+  const tot = j.length;
+  if (!tot) add(css("--text-muted"), "i", "Ainda não tem ninguém registrado. Depois que os testadores jogarem a versão nova, os números aparecem aqui.");
+  else {
+    const at = j.filter(x => status(x.ultimo).k === "ativos").length;
+    const r = at / tot;
+    add(r >= .4 ? css("--good") : r >= .2 ? css("--warning") : css("--critical"), r >= .4 ? "✓" : "!",
+      `<b>${pct(at, tot)}</b> dos jogadores (${at} de ${tot}) jogaram nos últimos 3 dias.` + (r < .2 ? " Pouca gente voltando: vale lembrar a galera ou criar um motivo para voltar (bônus diário, evento)." : ""));
+    const voltou = j.filter(x => x.acessos >= 2).length, entrou = j.filter(x => x.acessos >= 1).length;
+    if (entrou >= 3) add(voltou/entrou >= .5 ? css("--good") : css("--warning"), voltou/entrou >= .5 ? "✓" : "!",
+      `<b>${pct(voltou, entrou)}</b> de quem abriu o jogo voltou pelo menos mais uma vez.`);
+    const conv = j.filter(x => !x.jogador).length;
+    if (conv) add(css("--text-muted"), "i", `<b>${conv}</b> ${conv === 1 ? "pessoa joga" : "pessoas jogam"} sem conta. Elas não aparecem no ranking nem salvam o progresso no servidor.`);
+  }
+  const L = D.lados || {};
+  const onT = (L.online_heroes_v||0) + (L.online_monsters_v||0);
+  if (onT >= 10){
+    const ph2 = L.online_heroes_v / onT;
+    if (ph2 > .6 || ph2 < .4) add(css("--warning"), "!", `No PvP online, <b>${ph2 > .5 ? "Heroes" : "Monsters"}</b> vence ${Math.round(Math.max(ph2,1-ph2)*100)}% das partidas. Está desequilibrado: deixe o outro lado um pouco mais forte.`);
+    else add(css("--good"), "✓", `PvP online equilibrado: Heroes vence ${Math.round(ph2*100)}%, Monsters ${Math.round((1-ph2)*100)}%.`);
+  } else add(css("--text-muted"), "i", `Ainda tem poucas partidas online (${onT}) para saber se Heroes x Monsters está equilibrado. Precisa de pelo menos 10.`);
+  const bh = L.bot_heroes||0, bm = L.bot_monsters||0;
+  if (bh + bm >= 5) add(css("--text-muted"), "i", `Contra o bot, <b>${pct(bh, bh+bm)}</b> escolhem Heroes e <b>${pct(bm, bh+bm)}</b> escolhem Monsters.`);
+  const op = (D.camp_onde_perdem || [])[0];
+  if (op && op.derrotas >= 3) add(css("--warning"), "!", `Na campanha, o nível <b>${op.nivel}</b> é onde mais gente perde (${op.derrotas} derrotas). Talvez esteja difícil demais.`);
+  const bn = (D.bot_niveis || []).filter(x => x.jogos >= 4);
+  for (let i = 1; i < bn.length; i++){
+    const a = bn[i-1].vitorias/bn[i-1].jogos, b = bn[i].vitorias/bn[i].jogos;
+    if (a - b > .3){ add(css("--warning"), "!", `O bot fica muito mais difícil do nível <b>${bn[i-1].nv}</b> (${Math.round(a*100)}% de vitórias) para o <b>${bn[i].nv}</b> (${Math.round(b*100)}%).`); break; }
+  }
+  const tj = (D.tutorial || {}).jogo;
+  if (tj && tj.comecou >= 3){
+    const r = tj.pulou / tj.comecou;
+    if (r > .4) add(css("--warning"), "!", `<b>${pct(tj.pulou, tj.comecou)}</b> pulam a batalha guiada. Talvez esteja longa: veja em que parte eles pulam.`);
+    else add(css("--good"), "✓", `<b>${pct(tj.terminou, tj.comecou)}</b> dos novatos terminaram a batalha guiada.`);
+  }
+  const pv = D.personagens || [];
+  if (pv.length){ const top = pv[0]; add(css("--text-muted"), "i", `O personagem mais evoluído é <b>${esc(NOMES[top.personagem] || top.personagem)}</b> (${top.jogadores} ${top.jogadores === 1 ? "pessoa" : "pessoas"}, até o nível ${top.nivel_max}).`); }
+  if ((R.pvp_divergentes||0) > 0) add(css("--critical"), "!", `<b>${R.pvp_divergentes}</b> partida(s) online com resultado diferente em cada celular. Veja a aba PvP e Campanha.`);
+  if (sessMed && R.sessoes >= 5) add(sessMed >= 300 ? css("--good") : css("--warning"), sessMed >= 300 ? "✓" : "!", `Cada vez que abrem o jogo, ficam em média <b>${tempo(sessMed)}</b>.` + (sessMed < 180 ? " É pouco: veja se o começo do jogo está claro (um 'Como jogar' ajuda)." : ""));
+  $("#insights").innerHTML = ins.join("");
+}
+
+// ---------------------------------------------------------------- JOGADORES
+let filtroJ = "todos", ordem = {c:"ultimo", d:-1};
+const COLS = [
+  ["nome","Nome"],["status","Situação"],["ultimo","Última vez"],["acessos","Acessos","num"],["segundos","Tempo","num"],
+  ["trofeus","Troféus","num"],["liga","Liga"],["pvp_online","PvP online","num"],["pvp_v","Vitórias online","num"],
+  ["pvp_bot","x Bot","num"],["bot_nivel_max","Bot máx.","num"],["camp_niveis","Campanha","num"],["camp_rec","Recorde campanha"],
+  ["evol","Evoluções","num"],["lado","Lado preferido"],["tut","Tutorial"],["moedas","Moedas","num"],["criado_em","Entrou em"],
+];
+function linhaJog(x){
+  const rec = Object.assign({}, x.camp_max || {}, x.recordes || {});
+  const recs = Object.entries(rec).sort((a,b) => b[1]-a[1]);
+  const evol = Object.values(x.personagens || {}).reduce((a,n) => a + n - 1, 0);
+  const lado = (x.jogou_heroes||0) === 0 && (x.jogou_monsters||0) === 0 ? (x.lado_atual ? (x.lado_atual === "heroes" ? "Heroes" : "Monsters") : "—")
+    : (x.jogou_heroes >= x.jogou_monsters ? "Heroes" : "Monsters");
+  const tut = x.tutorial === "terminou" ? "Fez" : x.tutorial === "pulou" ? "Pulou" : "—";
+  return {...x, liga: x.jogador ? ligaDe(x.trofeus) : "—", st: status(x.ultimo), evol, lado, tut,
+    camp_rec: recs.length ? `${recs[0][1]} (${DIFS[recs[0][0]] || recs[0][0]})` : "—", camp_rec_n: recs.length ? recs[0][1] : 0,
+    pvp_v: x.pvp_online_v};
+}
+function jogadores(){
+  const q = $("#busca").value.trim().toLowerCase();
+  let L = (D.jogadores || []).map(linhaJog).filter(x => {
+    if (q && !String(x.nome||"").toLowerCase().includes(q)) return false;
+    if (filtroJ === "contas") return !!x.jogador;
+    if (filtroJ === "convidados") return !x.jogador;
+    if (filtroJ !== "todos") return x.st.k === filtroJ;
+    return true;
+  });
+  const val = (x,c) => c === "status" ? (x.ultimo ? new Date(x.ultimo).getTime() : 0) : c === "ultimo" || c === "criado_em" ? (x[c] ? new Date(x[c]).getTime() : 0)
+    : c === "camp_rec" ? x.camp_rec_n : c === "liga" ? (x.trofeus||0) : x[c];
+  L.sort((a,b) => { const va = val(a,ordem.c), vb = val(b,ordem.c); return (va > vb ? 1 : va < vb ? -1 : 0) * ordem.d; });
+  const th = COLS.map(([c,t,k]) => `<th class="${k||""}" data-c="${c}">${t}${ordem.c === c ? (ordem.d > 0 ? " ▲" : " ▼") : ""}</th>`).join("");
+  const td = x => `<tr class="click" data-k="${esc(x.chave)}">
+    <td><b>${esc(x.nome)}</b>${x.jogador ? "" : ' <span class="pill">sem conta</span>'}</td>
+    <td><span class="st"><i style="background:${x.st.c}"></i>${x.st.t}</span></td>
+    <td title="${x.ultimo ? esc(dataHora(x.ultimo)) : ""}">${quando(x.ultimo)}</td>
+    <td class="num">${fmt(x.acessos)}</td><td class="num">${tempo(x.segundos)}</td>
+    <td class="num">${x.jogador ? fmt(x.trofeus) : "—"}</td><td>${x.liga}</td>
+    <td class="num">${fmt(x.pvp_online)}</td><td class="num">${x.pvp_online ? `${fmt(x.pvp_v)} (${pct(x.pvp_v, x.pvp_online)})` : "—"}</td>
+    <td class="num">${x.pvp_bot ? `${fmt(x.pvp_bot)} (${pct(x.pvp_bot_v, x.pvp_bot)})` : "0"}</td><td class="num">${x.bot_nivel_max ?? "—"}</td>
+    <td class="num">${fmt(x.camp_niveis)}</td><td>${x.camp_rec}</td>
+    <td class="num">${fmt(x.evol)}</td><td>${x.lado}</td><td>${x.tut}</td>
+    <td class="num">${x.jogador ? fmt(x.moedas) : "—"}</td><td>${x.criado_em ? new Date(x.criado_em).toLocaleDateString("pt-BR") : "—"}</td></tr>`;
+  $("#tabJog").innerHTML = `<thead><tr>${th}</tr></thead><tbody>${L.map(td).join("") || `<tr><td colspan="${COLS.length}" class="muted">Ninguém aqui.</td></tr>`}</tbody>`;
+  $$("#tabJog th").forEach(t => t.onclick = () => { ordem = {c:t.dataset.c, d: ordem.c === t.dataset.c ? -ordem.d : -1}; jogadores(); });
+  $$("#tabJog tr.click").forEach(t => t.onclick = () => detalhes(t.dataset.k));
+}
+$("#busca").oninput = () => jogadores();
+$$("#filtroJog .chip").forEach(c => c.onclick = () => { filtroJ = c.dataset.f; $$("#filtroJog .chip").forEach(x => x.classList.toggle("on", x === c)); jogadores(); });
+
+$("#btCsv").onclick = () => {
+  const L = (D.jogadores || []).map(linhaJog);
+  const cab = ["nome","conta","situacao","ultima_vez","acessos","tempo_min","trofeus","liga","pvp_online","vitorias_online","pvp_bot","vitorias_bot","bot_nivel_max","campanha_niveis","campanha_derrotas","recorde_campanha","evolucoes","lado_preferido","tutorial","moedas","entrou_em"];
+  const lin = L.map(x => [x.nome, x.jogador ? "sim" : "não", x.st.t, x.ultimo || "", x.acessos, Math.round((x.segundos||0)/60), x.trofeus ?? "", x.liga, x.pvp_online, x.pvp_online_v, x.pvp_bot, x.pvp_bot_v, x.bot_nivel_max ?? "",
+    x.camp_niveis, x.camp_derrotas, x.camp_rec, x.evol, x.lado, x.tut, x.moedas ?? "", x.criado_em || ""]);
+  const csv = [cab].concat(lin).map(r => r.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], {type:"text/csv"}));
+  a.download = "jogadores_hvm_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+};
+
+function detalhes(k){
+  const x = linhaJog((D.jogadores || []).find(j => j.chave === k));
+  const ev = (D.registro || []).filter(r => r.nome === x.nome || (r.tipo === "pvp_online" && (r.dados.heroes === x.nome || r.dados.monsters === x.nome)));
+  const pers = Object.entries(x.personagens || {}).sort((a,b) => b[1]-a[1]);
+  const rec = Object.assign({}, x.camp_max || {}, x.recordes || {});
+  const item = (l,v) => `<div><div class="muted" style="font-size:12px">${l}</div><div style="font-weight:600">${v}</div></div>`;
+  $("#modalCard").innerHTML = `
+    <div class="row"><h2 style="font-size:18px;margin:0">${esc(x.nome)}</h2><span class="st"><i style="background:${x.st.c}"></i>${x.st.t}</span><div class="grow"></div><button class="btn" id="fechar">Fechar</button></div>
+    <p class="desc">${x.jogador ? "Conta" : "Sem conta (convidado)"} · última vez ${quando(x.ultimo)}${x.plataforma ? " · " + esc(x.plataforma) : ""}${x.versao ? " · versão " + esc(x.versao) : ""}</p>
+    <div class="grid g4" style="margin-bottom:12px">
+      ${item("Acessos", fmt(x.acessos))}${item("Tempo jogado", tempo(x.segundos))}${item("Troféus", x.jogador ? fmt(x.trofeus) + " · " + x.liga : "—")}${item("Moedas", x.jogador ? fmt(x.moedas) : "—")}
+      ${item("PvP online", `${fmt(x.pvp_online)} · ${fmt(x.pvp_online_v)} vitórias`)}${item("Duelos", fmt(x.duelos))}${item("Contra o bot", `${fmt(x.pvp_bot)} · ${fmt(x.pvp_bot_v)} vitórias`)}${item("Bot mais difícil vencido", x.bot_nivel_max ?? "—")}
+      ${item("Campanha", `${fmt(x.camp_niveis)} níveis · ${fmt(x.camp_derrotas)} derrotas`)}${item("Lado preferido", `${x.lado} (H ${x.jogou_heroes||0} · M ${x.jogou_monsters||0})`)}${item("Vitórias / derrotas (perfil)", x.jogador ? `${fmt(x.vitorias)} / ${fmt(x.derrotas)}` : "—")}${item("Entrou em", x.criado_em ? new Date(x.criado_em).toLocaleDateString("pt-BR") : "—")}
+    </div>
+    <div class="grid g2">
+      <div><h2>Recorde na campanha</h2>${Object.keys(rec).length ? Object.entries(DIFS).map(([d,n]) => `<div class="row" style="justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)"><span>${n}</span><b>${rec[d] ? "nível " + rec[d] : "—"}</b></div>`).join("") : '<p class="muted">Ainda não jogou.</p>'}</div>
+      <div><h2>Personagens evoluídos</h2>${pers.length ? pers.map(([p,n]) => `<div class="row" style="justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)"><span>${esc(NOMES[p] || p)}</span><b>nível ${n}</b></div>`).join("") : '<p class="muted">Nenhum ainda.</p>'}</div>
+    </div>
+    <h2 class="mt">Últimos registros</h2>
+    <ul class="feed">${ev.slice(0, 60).map(itemFeed).join("") || '<li class="muted">Nada no período.</li>'}</ul>`;
+  $("#modal").style.display = "flex";
+  $("#fechar").onclick = () => $("#modal").style.display = "none";
+}
+$("#modal").onclick = e => { if (e.target.id === "modal") e.target.style.display = "none"; };
+addEventListener("keydown", e => { if (e.key === "Escape") $("#modal").style.display = "none"; });
+
+// ---------------------------------------------------------------- PVP E CAMPANHA
+function vs(a, b, ca, cb, la, lb){
+  const t = a + b;
+  if (!t) return `<p class="muted">Sem partidas no período.</p>`;
+  return `<div class="legend"><span><i style="background:${ca}"></i>${la}: ${fmt(a)} (${pct(a,t)})</span><span><i style="background:${cb}"></i>${lb}: ${fmt(b)} (${pct(b,t)})</span></div>
+    <div class="vs"><div style="flex:${a};background:${ca}">${a/t >= .12 ? pct(a,t) : ""}</div><div style="flex:${b};background:${cb}">${b/t >= .12 ? pct(b,t) : ""}</div></div>`;
+}
+function jogo(){
+  const L = D.lados || {}, H = css("--heroes"), M = css("--monsters");
+  $("#ladosOnline").innerHTML = `<p class="desc" style="margin:0">Vitórias por lado</p>` + vs(L.online_heroes_v||0, L.online_monsters_v||0, H, M, "Heroes", "Monsters")
+    + (L.online_empates ? `<p class="muted">${fmt(L.online_empates)} empate(s).</p>` : "")
+    + `<p class="desc" style="margin:10px 0 0">Lado que as contas estão usando agora</p>` + vs(L.perfil_heroes||0, L.perfil_monsters||0, H, M, "Heroes", "Monsters");
+  const bh = L.bot_heroes||0, bm = L.bot_monsters||0;
+  $("#ladosBot").innerHTML = `<p class="desc" style="margin:0">Lado escolhido</p>` + vs(bh, bm, H, M, "Heroes", "Monsters")
+    + `<p class="desc" style="margin:10px 0 4px">Quanto vence com cada lado</p>`
+    + barrasH([{nome:"Heroes", v: bh ? L.bot_heroes_v/bh*100 : 0, txt: bh ? pct(L.bot_heroes_v, bh) : "—", cor:H},
+               {nome:"Monsters", v: bm ? L.bot_monsters_v/bm*100 : 0, txt: bm ? pct(L.bot_monsters_v, bm) : "—", cor:M}]);
+  const bn = D.bot_niveis || [];
+  if (bn.length) barras("#chBot", bn.map(x => "NV " + x.nv), [
+      {nome:"Vitórias", cor:css("--s3"), valores: bn.map(x => x.vitorias)},
+      {nome:"Derrotas", cor:css("--monsters"), valores: bn.map(x => x.jogos - x.vitorias)}],
+      {titulo: i => `Bot nível ${bn[i].nv}`, linhas: i => [[css("--s3"),"Vitórias",fmt(bn[i].vitorias)],[css("--monsters"),"Derrotas",fmt(bn[i].jogos - bn[i].vitorias)],[null,"% de vitórias",pct(bn[i].vitorias, bn[i].jogos)]]});
+  else $("#chBot").innerHTML = `<p class="muted">Sem partidas contra o bot no período.</p>`;
+  const op = (D.camp_onde_perdem || []).slice().sort((a,b) => a.nivel - b.nivel);
+  if (op.length) barras("#chPerdem", op.map(x => "NV " + x.nivel), [{nome:"Derrotas", cor:css("--monsters"), valores: op.map(x => x.derrotas)}], {titulo: i => `Nível ${op[i].nivel}`});
+  else $("#chPerdem").innerHTML = `<p class="muted">Ninguém perdeu na campanha no período.</p>`;
+  const cp = D.campanha || [];
+  $("#tabCamp").innerHTML = `<thead><tr><th>Dificuldade</th><th class="num">Jogadores</th><th class="num">Níveis vencidos</th><th class="num">Derrotas</th><th class="num">% de vitória</th><th class="num">Perdem em média no nível</th><th class="num">Nível mais alto</th></tr></thead><tbody>`
+    + (cp.map(c => `<tr><td>${DIFS[c.dif] || esc(c.dif)}</td><td class="num">${fmt(c.jogadores)}</td><td class="num">${fmt(c.niveis)}</td><td class="num">${fmt(c.derrotas)}</td><td class="num">${pct(c.niveis, c.niveis + c.derrotas)}</td><td class="num">${c.nivel_medio_derrota ?? "—"}</td><td class="num">${c.nivel_max ?? "—"}</td></tr>`).join("")
+       || `<tr><td colspan="7" class="muted">Sem partidas de campanha no período.</td></tr>`) + "</tbody>";
+  const R = D.resumo;
+  $("#saudePvp").innerHTML = barrasH([
+    {nome:"Terminaram certinho", v: R.pvp_online + R.duelos, cor: css("--good")},
+    {nome:"Resultado diferente", v: R.pvp_divergentes || 0, cor: css("--critical"), dica:"Cada celular disse um vencedor diferente"},
+    {nome:"Nunca terminaram", v: R.pvp_abandonadas || 0, cor: css("--warning"), dica:"Alguém fechou o jogo ou caiu a internet"},
+  ]);
+}
+
+// ---------------------------------------------------------------- PERSONAGENS
+function personagens(){
+  const pv = D.personagens || [];
+  const todos = HEROES.concat(Object.keys(NOMES).filter(k => !HEROES.includes(k)));
+  const mapa = Object.fromEntries(pv.map(p => [p.personagem, p]));
+  const lista = todos.map(id => ({id, ...(mapa[id] || {jogadores:0, nivel_medio:null, nivel_max:null, evolucoes:0})})).sort((a,b) => b.evolucoes - a.evolucoes);
+  $("#persBarras").innerHTML = barrasH(lista.map(p => ({nome: NOMES[p.id] || p.id, v: p.evolucoes, txt: fmt(p.evolucoes) + " evol.", cor: HEROES.includes(p.id) ? css("--heroes") : css("--monsters")})));
+  $("#tabPers").innerHTML = `<thead><tr><th>Personagem</th><th>Lado</th><th class="num">Pessoas que evoluíram</th><th class="num">Nível médio</th><th class="num">Nível mais alto</th><th class="num">Evoluções</th></tr></thead><tbody>`
+    + lista.map(p => `<tr><td>${esc(NOMES[p.id] || p.id)}</td><td>${HEROES.includes(p.id) ? "Heroes" : "Monsters"}</td><td class="num">${fmt(p.jogadores)}</td><td class="num">${p.nivel_medio ?? "—"}</td><td class="num">${p.nivel_max ?? "—"}</td><td class="num">${fmt(p.evolucoes)}</td></tr>`).join("") + "</tbody>";
+}
+
+// ---------------------------------------------------------------- REGISTRO
+const TIPOS = {abriu:["Acessos","📱"], cadastro:["Contas novas","✨"], liga:["Ligas","🏆"], evoluiu:["Evoluções","⬆️"], campanha:["Campanha","🏰"], pvp_bot:["Contra o bot","🤖"], pvp_online:["PvP online","⚔️"], tutorial:["Tutorial","🎓"]};
+let filtroR = new Set(Object.keys(TIPOS));
+function textoEv(r){
+  const d = r.dados || {}, n = `<b>${esc(r.nome)}</b>`;
+  switch (r.tipo){
+    case "abriu": return `${n} ${d.voltou ? "voltou para o jogo" : "abriu o jogo"}${d.plataforma ? ` <span class="muted">(${esc(d.plataforma)}${d.logado === false ? ", sem conta" : ""})</span>` : ""}`;
+    case "cadastro": return `${n} criou a conta`;
+    case "liga": return `${n} ${d.subiu ? "subiu" : "caiu"} para a liga <b>${esc(d.para)}</b> <span class="muted">(${fmt(d.trofeus)} troféus, antes ${esc(d.de)})</span>`;
+    case "evoluiu": return `${n} evoluiu <b>${esc(NOMES[d.personagem] || d.personagem)}</b> para o nível ${d.nivel}`;
+    case "campanha": return d.venceu ? `${n} passou do nível <b>${d.nivel}</b> da campanha <span class="muted">(${DIFS[d.dif] || esc(d.dif)}${d.estrelas ? ", " + "★".repeat(d.estrelas) : ""})</span>`
+                                     : `${n} perdeu no nível <b>${d.nivel}</b> da campanha <span class="muted">(${DIFS[d.dif] || esc(d.dif)})</span>`;
+    case "pvp_bot": return `${n} ${d.empate ? "empatou com" : d.venceu ? "venceu" : "perdeu para"} o bot nível ${d.bot_nivel} jogando de <b>${d.lado === "heroes" ? "Heroes" : "Monsters"}</b>`;
+    case "tutorial": {
+      const qual = d.parte === "menu" ? "o tutorial do menu" : "a batalha guiada";
+      if (d.evento === "comecou") return `${n} começou ${qual}`;
+      if (d.evento === "terminou") return `${n} terminou ${qual}`;
+      return `${n} pulou ${qual} <span class="muted">(em: ${esc(nomePasso(d.parte, d.passo))})</span>`;
+    }
+    case "pvp_online": {
+      const w = d.vencedor === "heroes" ? d.heroes : d.vencedor === "monsters" ? d.monsters : null;
+      return `${d.amistoso ? "Duelo" : "PvP online"}: <b>${esc(d.heroes)}</b> (Heroes) x <b>${esc(d.monsters)}</b> (Monsters) — `
+        + (!d.finalizada ? `<span class="muted">não terminou</span>` : w ? `venceu <b>${esc(w)}</b>` : "empate")
+        + (d.divergente ? ` <span class="pill" style="color:var(--critical)">resultado diferente!</span>` : "");
+    }
+  }
+  return `${n} ${esc(r.tipo)}`;
+}
+const itemFeed = r => `<li><span class="t">${dataHora(r.criado_em)}</span><span class="ico">${(TIPOS[r.tipo]||["","•"])[1]}</span><span>${textoEv(r)}</span></li>`;
+function registro(){
+  $("#filtroReg").innerHTML = Object.entries(TIPOS).map(([k,[t]]) => `<button class="chip ${filtroR.has(k) ? "on" : ""}" data-t="${k}">${t}</button>`).join("");
+  $$("#filtroReg .chip").forEach(c => c.onclick = () => { const k = c.dataset.t; filtroR.has(k) ? filtroR.delete(k) : filtroR.add(k); registro(); });
+  const q = $("#buscaReg").value.trim().toLowerCase();
+  const L = (D.registro || []).filter(r => filtroR.has(r.tipo) && (!q || String(r.nome).toLowerCase().includes(q)));
+  $("#feed").innerHTML = L.slice(0, 500).map(itemFeed).join("") || `<li class="muted">Nada aqui ainda.</li>`;
+}
+$("#buscaReg").oninput = () => registro();
+
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => D && desenharTudo(), 150); });
+
+// ---------------------------------------------------------------- CRÉDITOS DO SUPABASE
+// Limites do plano grátis (supabase.com/pricing, conferido em 05/10/2026). Se mudar, troque aqui.
+const LIMITES = {
+  msgs:    {nome:"Mensagens do Realtime", lim:2000000, un:"", dica:"PvP online e duelos (ao vivo entre 2 celulares)"},
+  egress:  {nome:"Tráfego (egress)", lim:5*1024, un:"MB", dica:"Tudo que o servidor manda para os celulares"},
+  banco:   {nome:"Tamanho do banco", lim:500, un:"MB", dica:"Contas, partidas, registros, chat"},
+  mau:     {nome:"Usuários ativos no mês", lim:50000, un:"", dica:"Contas que entraram neste mês"},
+  conexoes:{nome:"Conexões ao mesmo tempo", lim:200, un:"", dica:"Celulares em partida online juntos (pico)"},
+};
+const fmtUn = (v, un) => un === "MB" ? (v >= 1024 ? (v/1024).toLocaleString("pt-BR",{maximumFractionDigits:2}) + " GB" : fmt(Math.round(v*10)/10) + " MB") : fmt(Math.round(v));
+function estadoCor(p){ return p >= 1 ? ["Vai passar!", css("--critical"), "!"] : p >= .8 ? ["Atenção", css("--warning"), "!"] : ["Tranquilo", css("--good"), "✓"]; }
+function creditos(){
+  const K = D.creditos;
+  if (!K){ $("#credResumo").innerHTML = '<p class="muted">Rode o arquivo supabase/22_creditos.sql no Supabase para ver o consumo.</p>'; $("#credMedidores").innerHTML = ""; return; }
+  const fator = K.dias_mes / K.dias_passados;          // projeção até o fim do mês
+  const itens = [
+    ["msgs", K.msgs, K.msgs * fator, true],
+    ["egress", K.egress_mb, K.egress_mb * fator, true],
+    ["banco", K.banco_mb, K.banco_mb, false],
+    ["mau", K.mau, K.mau * Math.min(fator, 2), true],
+    ["conexoes", K.pico_conexoes, K.pico_conexoes, false],
+  ];
+  const fimMes = new Date(K.fim_mes);
+  let pior = 0;
+  $("#credMedidores").innerHTML = itens.map(([k, usado, proj, projeta]) => {
+    const L = LIMITES[k], p = usado / L.lim, pp = proj / L.lim;
+    pior = Math.max(pior, projeta ? pp : p);
+    const [et, cor, ic] = estadoCor(projeta ? pp : p);
+    let quando = "";
+    if (projeta && pp >= 1 && usado > 0){
+      const diaPorDia = usado / K.dias_passados;
+      const dias = (L.lim - usado) / diaPorDia;
+      const d = new Date(Date.now() + Math.max(0, dias) * 86400000);
+      quando = usado >= L.lim ? "Já passou do limite!" : `No ritmo de agora, bate o limite por volta de <b>${d.toLocaleDateString("pt-BR")}</b>.`;
+    } else if (projeta) quando = `Até o fim do mês: ~${fmtUn(proj, L.un)} (${Math.round(pp*100)}%).`;
+    else quando = k === "banco" ? "Não zera no mês: vai somando (a faxina segura)." : "Pico do mês.";
+    return `<div class="card medidor">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">${L.nome}</h2><span class="estado" style="background:${cor}">${ic} ${et}</span></div>
+      <p class="desc" style="margin:2px 0 8px">${L.dica}</p>
+      <div class="topo"><span class="v">${fmtUn(usado, L.un)}</span><span class="lim">de ${fmtUn(L.lim, L.un)} · ${(p*100).toLocaleString("pt-BR",{maximumFractionDigits:1})}%</span></div>
+      <div class="barra" title="Barra cheia = agora · clarinha = projeção do mês">
+        ${projeta ? `<div class="pr" style="width:${Math.min(100, pp*100)}%;background:${cor}"></div>` : ""}
+        <div class="f" style="width:${Math.max(p > 0 ? 1.5 : 0, Math.min(100, p*100))}%;background:${cor}"></div>
+        <div class="ln" style="left:80%" title="80%"></div>
+      </div>
+      <div class="muted" style="font-size:12px">${quando}</div></div>`;
+  }).join("");
+  const [et, cor] = estadoCor(pior);
+  $("#pillCred").textContent = Math.round(pior * 100) + "%";
+  $("#credResumo").innerHTML = `<div class="row"><span class="estado" style="background:${cor};font-size:14px;padding:4px 12px">${et}</span>
+    <h2 style="margin:0">Consumo deste mês: ${Math.round(K.dias_passados)} de ${Math.round(K.dias_mes)} dias</h2><div class="grow"></div>
+    <span class="muted">O mês do Supabase recomeça em ${fimMes.toLocaleDateString("pt-BR")}</span></div>
+    <p class="desc" style="margin:8px 0 0">${fmt(K.partidas_online)} partidas online e ${fmt(K.cercos_online)} Cercos online neste mês. Partidas contra o bot e a campanha não gastam Realtime.</p>`;
+  const pd = K.por_dia || [];
+  barras("#chCredMsgs", pd.map(d => diaCurto(d.dia)), [{nome:"Mensagens", cor:css("--heroes"), valores: pd.map(d => d.msgs)}],
+    {titulo: i => new Date(pd[i].dia + "T12:00").toLocaleDateString("pt-BR"), linhas: i => [[css("--heroes"),"Mensagens",fmt(pd[i].msgs)],[null,"Partidas online",fmt(pd[i].partidas)],[null,"Tráfego",fmtUn(pd[i].egress_mb,"MB")]]});
+  $("#credBanco").innerHTML = barrasH((K.banco_partes || []).map(t => ({nome: t.tabela, v: t.mb, cor: css("--s3"), txt: fmtUn(t.mb, "MB")})));
+  const dicas = [];
+  const add = (c, i, t) => dicas.push(`<li><span class="ic" style="background:${c}">${i}</span><span>${t}</span></li>`);
+  const pm = (K.msgs * fator) / LIMITES.msgs.lim;
+  if (pm >= .8) add(css("--warning"), "!", "As mensagens do Realtime vão chegar perto do limite. Saída: mandar o aviso do PvP em blocos maiores (corta pela metade) ou passar para o plano Pro (US$ 25/mês: 5 milhões).");
+  else add(css("--good"), "✓", `Mensagens do Realtime tranquilas: dá para mais ~${fmt(Math.max(0, Math.floor((LIMITES.msgs.lim - K.msgs) / 4000)))} partidas online neste mês.`);
+  if (K.banco_mb / LIMITES.banco.lim >= .6) add(css("--warning"), "!", "O banco está passando de 60%. Diminua os dias da faxina (ex.: registros com mais de 30 dias) no 21_faxina.sql.");
+  add(css("--text-muted"), "i", "Se algum limite do plano grátis estourar, o Supabase pode deixar o projeto mais lento ou pausar o que passou. No plano Pro (US$ 25/mês) os limites sobem bastante.");
+  add(css("--text-muted"), "i", "Projeto grátis parado por 1 semana sem ninguém usar é pausado pelo Supabase. Com o jogo na loja, isso não acontece.");
+  $("#credDicas").innerHTML = dicas.join("");
+}
+
+// ---------------------------------------------------------------- AO VIVO
+const ATIV = {menu:["No menu","#6b7280"], campanha:["Campanha","var(--s3)"], pvp_bot:["Batalha x bot","var(--monsters)"],
+  pvp_online:["Batalha online","var(--critical)"], cerco:["Cerco","#8b5cf6"], duelo:["Duelo com amigo","var(--heroes)"],
+  campeonato:["Campeonato","#d4a017"], sala:["Sala de entrada","#0ea5a4"]};
+const corAtiv = k => (ATIV[k] || [k, "#6b7280"])[1];
+const nomeAtiv = k => (ATIV[k] || [k])[0];
+let V = null, timerVivo = null, buscandoVivo = false, filtroV = "todos";
+async function buscarVivo(){
+  if (buscandoVivo) return;
+  buscandoVivo = true;
+  try {
+    if (chave.toLowerCase() === "demo") V = demoVivo();
+    else {
+      const r = await fetch(SUPABASE + "/rest/v1/rpc/painel_ao_vivo", {method:"POST",
+        headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave})});
+      V = r.ok ? await r.json() : {erro: true};
+    }
+  } catch(e){ V = {erro: true}; }
+  buscandoVivo = false;
+  $("#pillVivo").textContent = V && !V.erro ? fmt(V.total) : "—";
+  if ($("#abas .tab.on").dataset.aba === "vivo") vivo();
+}
+function ligarVivo(){ clearInterval(timerVivo); buscarVivo(); timerVivo = setInterval(buscarVivo, 10000); }
+
+const CORES_AV = ["#2f7fd6","#1fa6a0","#8a5ad6","#d65a7a","#d6862f","#4aa83a"];
+function corNome(n){ let h = 0; for (const ch of String(n)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return CORES_AV[h % CORES_AV.length]; }
+function avatar(p, cls = "av"){
+  const foto = p.foto && /^https:\/\//.test(p.foto) ? `background-image:url('${esc(p.foto)}');` : "";
+  return `<div class="${cls}" style="background-color:${corNome(p.nome)};${foto}">${foto ? "" : esc(String(p.nome).slice(0,1).toUpperCase())}</div>`;
+}
+const minutos = iso => Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+const hora = iso => new Date(iso).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+// o que a pessoa conseguiu nesta sessão, em "selos"
+function selosSessao(s){
+  if (!s) return "";
+  const o = [];
+  if (s.niveis) o.push(`<span class="bom">🏰 <b>${s.niveis}</b> ${s.niveis === 1 ? "nível" : "níveis"}${s.nivel_max ? " · até o " + s.nivel_max : ""}</span>`);
+  if (s.derrotas) o.push(`<span class="ruim">💀 <b>${s.derrotas}</b> ${s.derrotas === 1 ? "derrota" : "derrotas"}</span>`);
+  if (s.pvp_v || s.pvp_d) o.push(`<span class="${s.pvp_v >= s.pvp_d ? "bom" : "ruim"}">⚔️ <b>${s.pvp_v}</b>V · <b>${s.pvp_d}</b>D</span>`);
+  if (s.evolucoes) o.push(`<span class="bom">⬆️ <b>${s.evolucoes}</b> ${s.evolucoes === 1 ? "evolução" : "evoluções"}</span>`);
+  const lg = (s.ultimos || []).find(u => u.tipo === "liga");
+  if (lg) o.push(`<span class="${lg.dados.subiu ? "bom" : "ruim"}">🏆 ${lg.dados.subiu ? "subiu" : "caiu"} p/ <b>${esc(lg.dados.para)}</b></span>`);
+  if (!o.length) o.push(`<span>Ainda nada nesta sessão</span>`);
+  return o.join("");
+}
+// uma linha do que aconteceu (sessão)
+function textoSessao(u){
+  const d = u.dados || {};
+  switch (u.tipo){
+    case "campanha": return [d.venceu ? "🏰" : "💀", d.venceu ? `Passou do nível <b>${d.nivel}</b>${d.estrelas ? " " + "★".repeat(d.estrelas) : ""}` : `Perdeu no nível <b>${d.nivel}</b>`];
+    case "pvp_bot": return ["🤖", `${d.empate ? "Empatou" : d.venceu ? "Venceu" : "Perdeu"} contra o bot nv ${d.bot_nivel ?? "?"} <span class="muted">(${d.lado === "monsters" ? "Monsters" : "Heroes"})</span>`];
+    case "pvp_online": return ["⚔️", `${d.empate ? "Empatou com" : d.venceu ? "Venceu" : "Perdeu para"} <b>${esc(d.contra || "?")}</b> <span class="muted">(${d.lado === "monsters" ? "Monsters" : "Heroes"}${d.modo === "cerco" ? " · Cerco" : d.amistoso ? " · duelo" : d.jogo > 1 ? " · série " + d.jogo : ""})</span>`];
+    case "evoluiu": return ["⬆️", `Evoluiu <b>${esc(NOMES[d.personagem] || d.personagem)}</b> para o nível ${d.nivel}`];
+    case "liga": return ["🏆", `${d.subiu ? "Subiu" : "Caiu"} para a liga <b>${esc(d.para)}</b>`];
+    case "desistiu": return ["🚪", `Saiu no meio (${esc(d.modo || "")})`];
+    case "tutorial": return ["🎓", `${d.evento === "terminou" ? "Terminou" : d.evento === "pulou" ? "Pulou" : "Começou"} o tutorial`];
+  }
+  return ["•", esc(u.tipo)];
+}
+
+function vivo(){
+  if (!V){ $("#vivoLista").innerHTML = '<p class="muted">Carregando...</p>'; return; }
+  if (V.erro){ $("#vivoLista").innerHTML = '<p class="muted">Rode os arquivos supabase/20_ao_vivo.sql e 29_painel_assistir.sql no Supabase para ver quem está jogando agora.</p>'; $("#vivoKpis").innerHTML = ""; return; }
+  const pa = V.por_atividade || {};
+  const L = V.lista || [];
+  const jogando = (V.total || 0) - (pa.menu || 0) - (pa.sala || 0);
+  const somaS = k => L.reduce((a, p) => a + ((p.sessao || {})[k] || 0), 0);
+  $("#vivoKpis").innerHTML = [["Online agora", fmt(V.total), `${fmt(jogando)} numa partida · ${fmt((pa.menu || 0) + (pa.sala || 0))} no menu`],
+    ["Conquistas desta leva", fmt(somaS("niveis") + somaS("pvp_v")), `${fmt(somaS("niveis"))} níveis · ${fmt(somaS("pvp_v"))} vitórias`],
+    ["Entraram hoje", fmt(V.hoje), "pessoas diferentes"], ["Pico nas últimas 24 h", fmt(V.pico_24h || 0), "pessoas na mesma hora"]]
+    .map(([l,v,n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join("");
+  // filtros por atividade
+  const tem = ["todos"].concat(Object.keys(pa));
+  if (!tem.includes(filtroV)) filtroV = "todos";
+  $("#vivoFiltro").innerHTML = tem.map(k => `<button class="chip ${filtroV === k ? "on" : ""}" data-f="${k}">${k === "todos" ? "Todos" : nomeAtiv(k)} · ${k === "todos" ? fmt(V.total) : fmt(pa[k])}</button>`).join("");
+  $$("#vivoFiltro .chip").forEach(b => b.onclick = () => { filtroV = b.dataset.f; vivo(); });
+  const lista = L.filter(p => filtroV === "todos" || p.atividade === filtroV)
+    .sort((a, b) => (a.atividade === "menu") - (b.atividade === "menu") || new Date(a.desde) - new Date(b.desde));
+  $("#vivoLista").innerHTML = lista.length ? lista.map(p => {
+    const c = corAtiv(p.atividade);
+    const lado = p.lado === "heroes" ? "Heroes" : p.lado === "monsters" ? "Monsters" : "";
+    const ult = ((p.sessao || {}).ultimos || []).slice(0, 3).map(u => { const [ic, t] = textoSessao(u); return `<div>${ic} ${t} <span class="muted">· ${hora(u.em)}</span></div>`; }).join("");
+    const pode = p.atividade !== "menu" && p.atividade !== "sala" && p.v2 !== false;
+    return `<div class="vcard" style="--cor:${c}">
+      <div class="cab">${avatar(p)}<div style="min-width:0;flex:1"><div class="nm">${esc(p.nome)}${p.conta ? "" : ' <span class="pill">sem conta</span>'}</div>
+        <div class="mini">${lado ? lado + " · " : ""}${p.trofeus != null ? fmt(p.trofeus) + " troféus · " + ligaDe(p.trofeus) : "convidado"}${p.versao ? " · v" + esc(p.versao) : ""}</div></div></div>
+      <div class="agora"><span class="ativ" style="background:${c}">${nomeAtiv(p.atividade)}</span>${p.detalhe ? `<span>${esc(p.detalhe)}</span>` : ""}<span class="muted">· há ${minutos(p.desde)} min</span></div>
+      <div class="conq">${selosSessao(p.sessao)}</div>
+      ${ult ? `<div class="ult">${ult}</div>` : ""}
+      <div class="pe"><span class="mini">Online há ${minutos((p.sessao || {}).desde || p.desde)} min</span><div class="grow"></div>
+        ${p.v2 === false ? `<span class="pill" title="Essa versão do jogo não manda a partida para o painel">versão antiga</span>` : ""}<button class="btn peq ${pode ? "ver" : ""}" data-assistir="${esc(p.chave || "")}" ${p.chave ? "" : "disabled"}>${pode ? "▶ Assistir" : "Ver sessão"}</button></div>
+    </div>`;
+  }).join("") : '<p class="muted">Ninguém jogando agora.</p>';
+  $$("[data-assistir]").forEach(b => b.onclick = () => abrirAssistir(b.dataset.assistir));
+  // o que está acontecendo (tudo junto, mais novo primeiro)
+  const feed = [];
+  L.forEach(p => ((p.sessao || {}).ultimos || []).forEach(u => feed.push({p, u})));
+  feed.sort((a, b) => new Date(b.u.em) - new Date(a.u.em));
+  $("#vivoFeed").innerHTML = feed.slice(0, 40).map(({p, u}) => { const [ic, t] = textoSessao(u);
+    return `<li><span class="t">${hora(u.em)}</span><span class="ico">${ic}</span><span><b>${esc(p.nome)}</b> · ${t}</span></li>`; }).join("")
+    || '<li class="muted">Nada ainda. As conquistas aparecem aqui assim que acontecem.</li>';
+  $("#vivoHora").textContent = "Atualizado " + new Date().toLocaleTimeString("pt-BR");
+  versoes();
+}
+
+// ======================================================================
+//  ASSISTIR AO VIVO (29_painel_assistir.sql): a cada 2,5 s pede a foto da partida e desenha a arena
+// ======================================================================
+const CURTO = {elara:"El",nick:"Ni",arqueiro:"Aq",protetor:"Pr",mago:"Mg",magoFogo:"MF",sentinela:"Se",engenheiro:"En",darian:"Da",aura:"Au",
+  esqueletoBlack:"EB",esqueleto:"Es",esqueletoFogo:"EF",esqueletoArqueiro:"EA",esqueletoProtetor:"EP",esqueletoMago:"EM",esqueletoTita:"Ti",
+  esqueletoBombardeiro:"Bo",golemOssos:"Go",esqueletoMistico:"Mi"};
+const GRANDE = {esqueletoTita:1.5, golemOssos:1.5, darian:1.2, sentinela:1.2, esqueletoProtetor:1.15, protetor:1.15};
+let AS = {quem:"", timer:null, ant:null, atual:null, t0:0, raf:0, info:null, pedindo:false};
+
+function abrirAssistir(quem){
+  AS = {quem, timer:null, ant:null, atual:null, t0:0, raf:0, info:null, pedindo:false, desde: Date.now()};
+  $("#assistir").style.display = "flex";
+  $("#asAviso").style.display = "grid";
+  $("#asAviso").textContent = "Conectando ao jogo...";
+  $("#asHud").innerHTML = ""; $("#asFeed").innerHTML = ""; $("#asConq").innerHTML = "";
+  pedirFoto();
+  AS.timer = setInterval(pedirFoto, 2500);
+  cancelAnimationFrame(AS.raf);
+  const loop = () => { desenharTela(); AS.raf = requestAnimationFrame(loop); };
+  AS.raf = requestAnimationFrame(loop);
+}
+function fecharAssistir(){
+  clearInterval(AS.timer); cancelAnimationFrame(AS.raf); AS.quem = "";
+  $("#assistir").style.display = "none";
+}
+$("#asFechar").onclick = fecharAssistir;
+$("#assistir").onclick = e => { if (e.target.id === "assistir") fecharAssistir(); };
+addEventListener("keydown", e => { if (e.key === "Escape" && AS.quem) fecharAssistir(); });
+
+async function pedirFoto(){
+  if (AS.pedindo || !AS.quem) return;
+  AS.pedindo = true;
+  let r = null;
+  try {
+    if (chave.toLowerCase() === "demo") r = demoAssistir(AS.quem);
+    else {
+      const x = await fetch(SUPABASE + "/rest/v1/rpc/painel_assistir", {method:"POST",
+        headers:{"apikey":CHAVE_API, "Content-Type":"application/json"}, body: JSON.stringify({p_chave: chave, p_quem: AS.quem})});
+      r = x.ok ? await x.json() : {erro: await x.text()};
+    }
+  } catch(e){ r = {erro: "sem internet"}; }
+  AS.pedindo = false;
+  if (!AS.quem) return;
+  if (!r || r.erro){
+    $("#asAviso").style.display = "grid";
+    $("#asAviso").textContent = /painel_assistir|function/i.test(String(r && r.erro)) ? "Rode o arquivo supabase/29_painel_assistir.sql no Supabase." : "Essa pessoa saiu do jogo.";
+    return;
+  }
+  AS.info = r;
+  $("#asNome").textContent = r.nome;
+  $("#asSub").innerHTML = `<span class="ativ" style="background:${corAtiv(r.atividade)}">${nomeAtiv(r.atividade)}</span> ${esc(r.detalhe || "")}${r.trofeus != null ? " · " + fmt(r.trofeus) + " troféus" : ""}`;
+  // sessão
+  $("#asConq").innerHTML = selosSessao(r.sessao);
+  $("#asFeed").innerHTML = ((r.sessao || {}).ultimos || []).map(u => { const [ic, t] = textoSessao(u);
+    return `<li><span class="t">${hora(u.em)}</span><span class="ico">${ic}</span><span>${t}</span></li>`; }).join("") || '<li class="muted">Nada ainda nesta sessão.</li>';
+  // foto da partida
+  const fresca = r.tela && r.tela_em && (new Date(r.agora).getTime() - new Date(r.tela_em).getTime()) < 9000;
+  if (!r.online){ $("#asAviso").style.display = "grid"; $("#asAviso").textContent = "Essa pessoa saiu do jogo."; return; }
+  if (r.atividade === "menu" || r.atividade === "sala"){
+    $("#asAviso").style.display = "grid"; $("#asAviso").innerHTML = `<div><b>${esc(r.nome)}</b> está ${r.atividade === "sala" ? "na sala de entrada do PvP" : "no menu"}.<br><span style="opacity:.75">A partida aparece aqui assim que ela começar a jogar.</span></div>`;
+    AS.atual = null; return;
+  }
+  if (!fresca && r.v2 === false){
+    $("#asAviso").style.display = "grid";
+    $("#asAviso").innerHTML = `<div style="max-width:520px"><b style="font-size:16px">${esc(r.nome)} está com uma versão antiga do jogo${r.versao ? " (v" + esc(r.versao) + ")" : ""}.</b><br><br><span style="opacity:.8">Essa versão ainda não manda a partida para o painel. Assim que a pessoa atualizar para a versão nova, a partida aparece aqui sozinha.<br>(Testando você mesmo? Jogue pela versão nova: Godot ou o APK novo.)</span></div>`;
+    return;
+  }
+  if (!fresca){
+    const esp = Math.round((Date.now() - AS.desde) / 1000);
+    $("#asAviso").style.display = "grid";
+    $("#asAviso").innerHTML = `<div>Esperando o jogo de <b>${esc(r.nome)}</b> responder... (${esp}s)<br><span style="opacity:.75">O celular percebe que você está assistindo em até 15 s.${esp > 40 ? "<br>Se não aparecer, a pessoa está com uma versão antiga do jogo." : ""}</span></div>`;
+    return;
+  }
+  $("#asAviso").style.display = "none";
+  if (!AS.atual || JSON.stringify(AS.atual.u) !== JSON.stringify(r.tela.u) || AS.atual.cv !== r.tela.cv){
+    AS.ant = AS.atual; AS.atual = r.tela; AS.t0 = performance.now();
+  }
+  hudAssistir(r.tela);
+}
+
+function hudAssistir(f){
+  const barra = (v, max, cor) => `<div class="barra-v"><i style="width:${Math.max(0, Math.min(100, 100 * v / max))}%;background:${cor}"></i></div>`;
+  const c = (l, v, extra = "") => `<div class="c"><div class="l">${l}</div><div class="v">${v}</div>${extra}</div>`;
+  const tempoTxt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  if (f.m === "campanha"){
+    $("#asHud").innerHTML = c("Castelo", `${f.cv}/${f.cm}`, barra(f.cv, f.cm, f.cv > f.cm * .35 ? "var(--good)" : "var(--critical)"))
+      + c("Nível", f.n, `<div class="l">${f.lj === "monsters" ? "lado Monsters" : "lado Heroes"}</div>`)
+      + c("Onda", `${f.o}/${f.ot}`, barra(f.p, 1, "var(--accent)"))
+      + c("Energia", fmt(f.e), `<div class="l">${f.u.filter(x => (x[2] === 0) === (f.lj !== "monsters")).length} tropas em campo</div>`);
+  } else {
+    const eu = f.ll === "monsters" ? f.vm : f.vh, ele = f.ll === "monsters" ? f.vh : f.vm;
+    $("#asHud").innerHTML = c(`Castelo de ${esc((AS.info || {}).nome || "quem joga")}`, `${eu}/${f.vmax}`, barra(eu, f.vmax, "var(--good)"))
+      + c(`Castelo ${f.adv ? "de " + esc(f.adv) : "inimigo"}`, `${ele}/${f.vmax}`, barra(ele, f.vmax, "var(--critical)"))
+      + c(f.prep > 0 ? "Preparando" : "Tempo", f.prep > 0 ? f.prep + "s" : tempoTxt(f.t), `<div class="l">${f.m === "cerco" ? "Cerco" : f.m === "campeonato" ? "Campeonato" : f.online ? "online" : "contra o bot"}</div>`)
+      + c("Energia", fmt(f.e), `<div class="l">lado ${f.ll === "monsters" ? "Monsters" : "Heroes"}</div>`);
+  }
+}
+
+// desenha a arena (com as tropas andando suave entre uma foto e outra)
+function desenharTela(){
+  const cv = $("#asTela"); const g = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const f = AS.atual;
+  g.clearRect(0, 0, W, H);
+  const campanha = !f || f.m === "campanha";
+  // céu e chão
+  const ceu = g.createLinearGradient(0, 0, 0, H * .22); ceu.addColorStop(0, "#1b2a4a"); ceu.addColorStop(1, "#2f4a3a");
+  g.fillStyle = ceu; g.fillRect(0, 0, W, H * .22);
+  const chao = g.createLinearGradient(0, H * .22, 0, H); chao.addColorStop(0, "#4b6b34"); chao.addColorStop(1, "#33502a");
+  g.fillStyle = chao; g.fillRect(0, H * .22, W, H * .78);
+  if (!f) return;
+  const top = H * .25, lh = (H - top - H * .05) / 5;
+  const k = Math.min(1, (performance.now() - AS.t0) / 2500);
+  const mundoW = f.w;
+  const X = x => x / mundoW * W;
+  // linhas e casas
+  for (let r = 0; r < 5; r++){
+    g.fillStyle = r % 2 ? "rgba(0,0,0,.06)" : "rgba(255,255,255,.04)";
+    g.fillRect(0, top + r * lh, W, lh);
+  }
+  const casas = (x0) => { for (let col = 0; col <= 9; col++){ const x = X(x0 + col * f.gc); g.strokeStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.moveTo(x, top); g.lineTo(x, top + 5 * lh); g.stroke(); } };
+  // castelos
+  const castelo = (x, w, cor, vida, max, dir) => {
+    g.fillStyle = cor; g.fillRect(x, top - 20, w, 5 * lh + 20);
+    g.fillStyle = "rgba(0,0,0,.25)"; for (let i = 0; i < 5; i++) g.fillRect(x + (dir > 0 ? w - 10 : 0), top + i * lh + lh * .3, 10, lh * .4);
+    const bw = Math.max(60, w * .9);
+    g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(x + w / 2 - bw / 2, top - 38, bw, 10);
+    g.fillStyle = vida / max > .35 ? "#3ad16b" : "#ff5a4a"; g.fillRect(x + w / 2 - bw / 2, top - 38, bw * Math.max(0, vida / max), 10);
+  };
+  if (campanha){
+    casas(f.gl);
+    castelo(0, X(f.gl) - 6, f.lj === "monsters" ? "#4b3a6e" : "#9aa3b5", f.cv, f.cm, 1);
+  } else {
+    casas(f.gl); casas(mundoW - f.aw + f.gl);
+    castelo(0, X(f.gl) - 4, "#9aa3b5", f.vh, f.vmax, 1);
+    castelo(W - (X(f.gl) - 4), X(f.gl) - 4, "#4b3a6e", f.vm, f.vmax, -1);
+    g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(X(f.aw), top - 20, X(mundoW - 2 * f.aw), 5 * lh + 20);   // o vazio entre as arenas
+    g.fillStyle = "rgba(255,255,255,.5)"; g.font = "600 24px Inter"; g.textAlign = "center";
+    g.fillText("⇄", X(mundoW / 2), top - 26);
+  }
+  // tropas (interpola com a foto anterior)
+  const ant = AS.ant ? AS.ant.u.slice() : [];
+  const usados = new Set();
+  const lista = f.u.map(u => {
+    let x = u[1];
+    let melhor = -1, dm = 1e9;
+    ant.forEach((a, i) => { if (!usados.has(i) && a[0] === u[0] && a[2] === u[2] && a[3] === u[3]){ const d = Math.abs(a[1] - u[1]); if (d < dm && d < 400){ dm = d; melhor = i; } } });
+    if (melhor >= 0){ usados.add(melhor); x = ant[melhor][1] + (u[1] - ant[melhor][1]) * k; }
+    return {l: u[0], x, lado: u[2], id: u[3], hp: u[4]};
+  }).sort((a, b) => a.l - b.l);
+  for (const t of lista){
+    const cy = top + t.l * lh + lh * .62, cx = X(t.x);
+    const r = Math.min(lh * .3, 22) * (GRANDE[t.id] || 1);
+    g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(cx, cy + r * .9, r, r * .35, 0, 0, Math.PI * 2); g.fill();
+    const base = t.lado === 0 ? ["#7fb6ff", "#2a5fb8"] : ["#ffb07a", "#b8461a"];
+    const gr = g.createRadialGradient(cx - r * .3, cy - r * .4, r * .1, cx, cy, r); gr.addColorStop(0, base[0]); gr.addColorStop(1, base[1]);
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+    g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.55)"; g.stroke();
+    // vida (arco em volta)
+    g.lineWidth = 3; g.strokeStyle = t.hp > 50 ? "#3ad16b" : t.hp > 25 ? "#f2c14e" : "#ff5a4a";
+    g.beginPath(); g.arc(cx, cy, r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t.hp / 100); g.stroke();
+    g.fillStyle = "#fff"; g.font = `700 ${Math.round(r * .8)}px Inter`; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(CURTO[t.id] || t.id.slice(0, 2), cx, cy + 1);
+  }
+  g.textBaseline = "alphabetic";
+  // legenda
+  g.font = "700 22px Inter"; g.textAlign = "left";
+  g.fillStyle = "#7fb6ff"; g.fillText("● Heroes", 16, 32); g.fillStyle = "#ffb07a"; g.fillText("● Monsters", 140, 32);
+}
+
+let versaoPreenchida = false;
+function versoes(){
+  const X = D && D.versao;
+  if (!X){ $("#versoes").innerHTML = '<p class="muted">Rode o arquivo supabase/23_versao.sql no Supabase.</p>'; return; }
+  const L = X.versoes || [];
+  $("#versoes").innerHTML = L.length ? barrasH(L.map(v => ({nome: "Versão " + v.versao, v: v.pessoas, cor: css("--heroes"), txt: `${fmt(v.pessoas)} pessoas · ${fmt(v.online)} online`}))) : '<p class="muted">Ainda sem dados.</p>';
+  if (!versaoPreenchida && X.config){
+    versaoPreenchida = true;
+    $("#vNome").value = X.config.versao_nome || ""; $("#vMin").value = X.config.versao_minima ?? 0; $("#vNov").value = X.config.novidades || "";
+  }
+}
+$("#vSalvar").onclick = async () => {
+  if (chave.toLowerCase() === "demo"){ $("#vMsg").textContent = "No modo demo não salva."; return; }
+  $("#vMsg").textContent = "Salvando...";
+  try {
+    const r = await fetch(SUPABASE + "/rest/v1/rpc/painel_definir_versao", {method:"POST", headers:{"apikey":CHAVE_API, "Content-Type":"application/json"},
+      body: JSON.stringify({p_chave: chave, p_minima: parseInt($("#vMin").value || "0", 10) || 0, p_nome: $("#vNome").value.trim(), p_novidades: $("#vNov").value.trim()})});
+    $("#vMsg").textContent = r.ok ? "Salvo! O jogo mostra na próxima vez que abrir." : "Erro ao salvar (rode o 23_versao.sql).";
+  } catch(e){ $("#vMsg").textContent = "Sem internet."; }
+};
+
+// ---------------------------------------------------------------- O QUE CURTEM
+function curtem(){
+  const G = D.gosto;
+  if (!G){ ["#gModos","#gTelas","#gDesiste","#gSocial"].forEach(k => $(k).innerHTML = '<p class="muted">Rode o arquivo supabase/20_ao_vivo.sql no Supabase.</p>'); $("#gCartas").innerHTML = ""; return; }
+  const M = G.modos || {};
+  $("#gModos").innerHTML = barrasH([
+    {nome:"Campanha (níveis)", v:M.campanha||0, cor:css("--s3")}, {nome:"Batalha x bot", v:M.batalha_bot||0, cor:css("--monsters")},
+    {nome:"Batalha online", v:M.batalha_online||0, cor:css("--critical")}, {nome:"Cerco x bot", v:M.cerco_bot||0, cor:"#8b5cf6", txt:`${fmt(M.cerco_bot||0)} (${pct(M.cerco_vitorias||0, M.cerco_bot||0)} vitórias)`},
+    {nome:"Duelo (Batalha)", v:M.duelo||0, cor:css("--heroes")}, {nome:"Duelo (Cerco)", v:M.cerco_duelo||0, cor:"#a78bfa"}].sort((a,b) => b.v - a.v));
+  const todas = ["Ranking","Personagens","Social","Convidar amigos","Modo PvP","Dificuldade","Opções"];
+  const tm = Object.fromEntries((G.telas || []).map(t => [t.tela, t]));
+  $("#gTelas").innerHTML = barrasH(todas.map(n => ({nome:n, v:(tm[n]||{}).n||0, cor:css("--heroes"), txt:`${fmt((tm[n]||{}).n||0)} (${fmt((tm[n]||{}).pessoas||0)} pessoas)`})).sort((a,b) => b.v - a.v));
+  const C2 = G.cartas || [];
+  const max = Math.max(1, ...C2.map(c => c.usos));
+  $("#gCartas").innerHTML = `<thead><tr><th>Personagem</th><th>Lado</th><th style="width:40%">Usos</th><th class="num">Partidas</th><th class="num">Pessoas</th><th class="num">% vitória</th></tr></thead><tbody>`
+    + (C2.length ? C2.map(c => { const h = HEROES.includes(c.carta); const pv = c.partidas ? c.vitorias / c.partidas : 0;
+      return `<tr><td>${esc(NOMES[c.carta] || c.carta)}</td><td>${h ? "Heroes" : "Monsters"}</td>
+      <td><div class="bar-h" style="grid-template-columns:1fr 60px;margin:0"><div class="tr"><div class="f" style="width:${(100*c.usos/max).toFixed(1)}%;background:${h ? css("--heroes") : css("--monsters")}"></div></div><span class="vv">${fmt(c.usos)}</span></div></td>
+      <td class="num">${fmt(c.partidas)}</td><td class="num">${fmt(c.jogadores)}</td>
+      <td class="num" style="color:${c.partidas >= 5 && pv > .7 ? "var(--warning)" : "inherit"}">${pct(c.vitorias, c.partidas)}</td></tr>`; }).join("")
+      : '<tr><td colspan="6" class="muted">Ainda sem partidas registradas (chega com a versão nova do jogo).</td></tr>') + "</tbody>";
+  const NM = {campanha:"Campanha", pvp_bot:"Batalha x bot", pvp_online:"Batalha online", cerco:"Cerco", duelo:"Duelo"};
+  const DS = G.desistencias || [];
+  $("#gDesiste").innerHTML = DS.length ? barrasH(DS.map(d => ({nome: NM[d.modo] || d.modo, v:d.n, cor:css("--warning"),
+      txt:`${fmt(d.n)} · min ${d.minuto_medio ?? "—"}${d.nivel_medio ? " · nível " + d.nivel_medio : ""}`}))) : '<p class="muted">Ninguém desistiu no meio ainda.</p>';
+  const S = G.social || {};
+  $("#gSocial").innerHTML = barrasH([
+    {nome:"Mensagens no chat", v:S.mensagens_chat||0, cor:css("--heroes")}, {nome:"Mensagens privadas", v:S.mensagens_privadas||0, cor:css("--heroes")},
+    {nome:"Amizades novas", v:S.amizades||0, cor:css("--good")}, {nome:"Convites de duelo", v:S.convites_duelo||0, cor:css("--monsters")},
+    {nome:"Duelos aceitos", v:S.duelos_aceitos||0, cor:css("--monsters"), txt:`${fmt(S.duelos_aceitos||0)} (${pct(S.duelos_aceitos||0, S.convites_duelo||0)})`}]);
+}
+
+function demoVivo(){
+  const nomes = ["Daniel","Luana","Fabio","Bia","Lucas","Rafa","Convidado 5C9","Mari"], at = ["campanha","pvp_bot","menu","cerco","pvp_online","duelo","campanha","menu"];
+  const det = ["Nível 12 · Médio","contra o bot (nível 6)","Ranking","contra o bot (nível 4)","contra Pedro","contra Luana","Nível 3 · Fácil",""];
+  const m = 60000, agora = Date.now();
+  const ses = i => {
+    const u = [];
+    if (i === 0){ u.push({em:new Date(agora-2*m).toISOString(), tipo:"campanha", dados:{venceu:true, nivel:12, estrelas:3}}, {em:new Date(agora-6*m).toISOString(), tipo:"evoluiu", dados:{personagem:"aura", nivel:6}},
+      {em:new Date(agora-9*m).toISOString(), tipo:"campanha", dados:{venceu:true, nivel:11, estrelas:2}}, {em:new Date(agora-13*m).toISOString(), tipo:"campanha", dados:{venceu:false, nivel:11}}); }
+    if (i === 1) u.push({em:new Date(agora-4*m).toISOString(), tipo:"pvp_bot", dados:{venceu:true, bot_nivel:6, lado:"monsters"}}, {em:new Date(agora-8*m).toISOString(), tipo:"pvp_bot", dados:{venceu:false, bot_nivel:6, lado:"monsters"}});
+    if (i === 4) u.push({em:new Date(agora-3*m).toISOString(), tipo:"pvp_online", dados:{venceu:true, contra:"Pedro", lado:"heroes", jogo:1}}, {em:new Date(agora-5*m).toISOString(), tipo:"liga", dados:{subiu:true, para:"Ouro"}});
+    if (i === 6) u.push({em:new Date(agora-1*m).toISOString(), tipo:"tutorial", dados:{evento:"terminou"}});
+    const c = t => u.filter(x => x.tipo === t);
+    return {desde:new Date(agora - (i*4+15)*m).toISOString(), niveis: c("campanha").filter(x => x.dados.venceu).length, nivel_max: i === 0 ? 12 : null,
+      derrotas: c("campanha").filter(x => !x.dados.venceu).length, pvp_v: u.filter(x => /pvp/.test(x.tipo) && x.dados.venceu).length,
+      pvp_d: u.filter(x => /pvp/.test(x.tipo) && !x.dados.venceu).length, evolucoes: c("evoluiu").length, ultimos: u};
+  };
+  const lista = nomes.map((n,i) => ({chave:"demo"+i, nome:n, conta: !n.startsWith("Convidado"), atividade:at[i], detalhe:det[i], desde:new Date(agora - (i*3+1)*m).toISOString(),
+    trofeus: n.startsWith("Convidado") ? null : 100 + i*190, lado: i % 2 ? "monsters" : "heroes", versao:"1.3", sessao: ses(i)}));
+  const pa = {}; lista.forEach(p => pa[p.atividade] = (pa[p.atividade]||0) + 1);
+  return {total: lista.length, por_atividade: pa, lista, hoje: 23, pico_24h: 11};
+}
+
+// DEMO do "Assistir": uma partida simulada que anda de verdade (tropas avançando, castelo perdendo vida)
+const DEMO_PARTIDA = {};
+function demoAssistir(quem){
+  const V2 = demoVivo(), p = V2.lista.find(x => x.chave === quem) || V2.lista[0];
+  const t = (Date.now() - (DEMO_PARTIDA[quem] ||= Date.now())) / 1000;
+  const pvp = /pvp_online|duelo|cerco/.test(p.atividade) || p.atividade === "pvp_bot";
+  const u = [];
+  const heroes = ["sentinela","arqueiro","mago","darian","aura","engenheiro","magoFogo","protetor","elara"];
+  const monstros = ["esqueleto","esqueletoFogo","esqueletoArqueiro","esqueletoTita","golemOssos","esqueletoMistico","esqueletoBombardeiro","esqueletoMago"];
+  if (!pvp){
+    for (let l = 0; l < 5; l++) for (let c = 0; c < 3; c++) u.push([l, 310 + c * 100 + 50, 0, heroes[(l * 3 + c) % heroes.length], 100 - ((l + c + Math.floor(t)) % 4) * 15]);
+    for (let i = 0; i < 10; i++){ const x = 1250 - ((t * 40 + i * 97) % 700); u.push([i % 5, Math.round(Math.max(620, x)), 1, monstros[i % monstros.length], 30 + (i * 23) % 70]); }
+    return {chave:quem, nome:p.nome, trofeus:p.trofeus, atividade:p.atividade, detalhe:p.detalhe, online:true, agora:new Date().toISOString(), tela_em:new Date().toISOString(), sessao:p.sessao,
+      tela:{m:"campanha", w:1280, gl:310, gc:100, lj:"heroes", cv:Math.max(20, 100 - Math.floor(t / 4)), cm:100, e:250 + Math.floor(t * 7) % 300, n:12, o:1 + Math.floor(t / 25) % 3, ot:3, st:"onda", p:Math.min(1, t / 90), u}};
+  }
+  const MW = 3760;
+  for (let l = 0; l < 5; l++){ u.push([l, 460 + (l % 2) * 100, 0, heroes[l], 100]); u.push([l, MW - 460 - (l % 2) * 100, 1, monstros[l], 100]); }
+  for (let i = 0; i < 8; i++){ u.push([i % 5, Math.round(700 + ((t * 45 + i * 140) % 1400)), 0, heroes[(i + 2) % heroes.length], 80]); u.push([(i + 2) % 5, Math.round(MW - 700 - ((t * 45 + i * 160) % 1400)), 1, monstros[(i + 3) % monstros.length], 70]); }
+  return {chave:quem, nome:p.nome, trofeus:p.trofeus, atividade:p.atividade, detalhe:p.detalhe, online:true, agora:new Date().toISOString(), tela_em:new Date().toISOString(), sessao:p.sessao,
+    tela:{m:p.atividade === "cerco" ? "cerco" : "pvp", w:MW, aw:1280, gl:310, gc:100, ll:p.lado, adv:"Pedro", online:p.atividade !== "pvp_bot", vh:Math.max(10, 100 - Math.floor(t / 5)), vm:Math.max(10, 100 - Math.floor(t / 3)), vmax:100,
+      t:Math.max(0, 180 - Math.floor(t)), prep:0, e:300, fim:false, u}};
+}
+
+// ======================================================================
+//  DADOS DE EXEMPLO (digite "demo" na chave)
+// ======================================================================
+function demo(dias){
+  let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const ri = (a,b) => a + Math.floor(rnd()*(b-a+1));
+  const agora = Date.now(), H = 3600e3, DD = 86400e3;
+  const nomes = ["Daniel","Fernando","Henrique","Luana","Fabio","Sabrina","Rafa","Bia","Lucas","Anjo","Mari","Pedro","Joana","Caio"];
+  const jog = nomes.map((n,i) => {
+    const conta = i < 11, ult = agora - (i < 5 ? ri(0,40)*H : i < 9 ? ri(3,6)*DD : ri(8,25)*DD);
+    const pv = ri(0,25), bot = ri(0,30), pers = {};
+    Object.keys(NOMES).forEach(k => { if (rnd() < .3) pers[k] = ri(2,6); });
+    const t = conta ? ri(0,1300) : null;
+    return {chave: conta ? "id"+i : "ap:"+i, jogador: conta ? "id"+i : null, nome: conta ? n : "Convidado " + (1000+i*37).toString(16).toUpperCase(),
+      trofeus:t, moedas: conta ? ri(50,3000) : null, vitorias: ri(0,30), derrotas: ri(0,30), lado_atual: rnd()<.5?"heroes":"monsters",
+      criado_em: new Date(agora - ri(5,40)*DD).toISOString(), ultimo: new Date(ult).toISOString(), acessos: ri(1,40), segundos: ri(300,30000),
+      pvp_online: conta ? pv : 0, pvp_online_v: conta ? ri(0,pv) : 0, duelos: ri(0,4), pvp_bot: bot, pvp_bot_v: ri(0,bot), bot_nivel_max: bot ? ri(1,12) : null,
+      camp_niveis: ri(0,60), camp_derrotas: ri(0,15), recordes: conta ? {medio: ri(3,40), facil: ri(1,20)} : {}, camp_max: {medio: ri(1,30)},
+      personagens: conta ? pers : {}, jogou_heroes: ri(0,20), jogou_monsters: ri(0,20), plataforma: "Android", versao: "1.1"};
+  });
+  const pd = [];
+  for (let i = dias-1; i >= 0; i--){
+    const d = new Date(agora - i*DD - 3*H).toISOString().slice(0,10), f = 1 + (dias-i)/dias;
+    pd.push({dia:d, acessos: ri(3,20)*f|0, ativos: ri(2,9)*f|0, novos: ri(0,2), pvp_online: ri(0,8), duelos: ri(0,2), pvp_bot: ri(1,12), camp_niveis: ri(5,30), camp_derrotas: ri(1,6), segundos: ri(1800,20000)});
+  }
+  const tipos = ["abriu","campanha","pvp_bot","evoluiu","liga","cadastro","tutorial","pvp_online"];
+  const reg = [];
+  for (let i = 0; i < 160; i++){
+    const tp = tipos[Math.min(tipos.length-1, Math.floor(Math.pow(rnd(),1.6)*tipos.length))], j = jog[ri(0, jog.length-1)];
+    const dd = {abriu:{plataforma:"Android", logado: !!j.jogador}, campanha:{dif:["facil","medio","dificil","hardcore"][ri(0,3)], nivel: ri(1,30), venceu: rnd()<.8, estrelas: ri(1,3)},
+      pvp_bot:{lado: rnd()<.55?"heroes":"monsters", venceu: rnd()<.6, bot_nivel: ri(1,10)}, evoluiu:{personagem: Object.keys(NOMES)[ri(0,13)], nivel: ri(2,6)},
+      liga:{de:"Bronze", para:"Prata", trofeus: 410, subiu:true}, cadastro:{}, tutorial:{parte:"jogo", evento:["comecou","terminou","pulou"][ri(0,2)], passo:["castelo","luta","inicio"][ri(0,2)]}, pvp_online:{heroes: jog[ri(0,10)].nome, monsters: jog[ri(0,10)].nome, vencedor: rnd()<.5?"heroes":"monsters", finalizada: rnd()<.92, amistoso: rnd()<.15, divergente: rnd()<.03}}[tp];
+    reg.push({criado_em: new Date(agora - i*ri(10,90)*60e3).toISOString(), tipo: tp, dados: dd, nome: tp === "pvp_online" ? dd.heroes + " x " + dd.monsters : j.nome});
+  }
+  return {agora: new Date().toISOString(), dias,
+    resumo: {contas: 11, convidados: 3, novas_7d: 4, ativos_hoje: 4, ativos_7d: 9, ativos_30d: 14, acessos: pd.reduce((a,d)=>a+d.acessos,0), segundos: 512000, sessoes: 640,
+      pvp_online: 92, pvp_divergentes: 1, pvp_abandonadas: 6, duelos: 11, pvp_bot: 210, camp_niveis: 640, camp_derrotas: 120},
+    por_dia: pd, por_hora: Array.from({length:24}, (_,h) => ({hora:h, acessos: Math.round(Math.max(0, 30*Math.sin((h-7)/24*Math.PI*2 - .6) + 22 + ri(-4,4)))})),
+    ligas: {Bronze: 6, Prata: 3, Ouro: 2}, lados: {online_heroes_v: 55, online_monsters_v: 36, online_empates: 1, bot_heroes: 120, bot_heroes_v: 80, bot_monsters: 90, bot_monsters_v: 41, perfil_heroes: 6, perfil_monsters: 5},
+    bot_niveis: Array.from({length:12}, (_,i) => { const j = ri(6,30); return {nv:i+1, jogos:j, vitorias: Math.round(j*Math.max(.1, .92 - i*.06 - (i>=8?.2:0)))}; }),
+    campanha: [{dif:"facil",niveis:210,derrotas:20,jogadores:6,nivel_medio_derrota:14.5,nivel_max:44},{dif:"medio",niveis:300,derrotas:60,jogadores:9,nivel_medio_derrota:11.2,nivel_max:115},{dif:"dificil",niveis:100,derrotas:30,jogadores:4,nivel_medio_derrota:7.8,nivel_max:22},{dif:"hardcore",niveis:30,derrotas:10,jogadores:2,nivel_medio_derrota:4.1,nivel_max:9}],
+    camp_onde_perdem: [{nivel:5,derrotas:14},{nivel:9,derrotas:11},{nivel:10,derrotas:8},{nivel:3,derrotas:6},{nivel:15,derrotas:5},{nivel:12,derrotas:4}],
+    personagens: [{personagem:"elara",jogadores:7,nivel_medio:3.4,nivel_max:7,evolucoes:18},{personagem:"esqueletoBlack",jogadores:5,nivel_medio:2.8,nivel_max:5,evolucoes:9},{personagem:"nick",jogadores:4,nivel_medio:2.5,nivel_max:4,evolucoes:6},{personagem:"esqueletoTita",jogadores:3,nivel_medio:2,nivel_max:3,evolucoes:3}],
+    creditos: (() => { const pd = []; for (let i = 0; i < 6; i++){ const p = [8,12,20,15,31,26][i]; pd.push({dia: new Date(Date.now() - (5-i)*86400000 - 3*3600000).toISOString().slice(0,10), partidas:p, msgs:p*4000, egress_mb: 40 + p*1.2}); }
+      return {dias_passados: 6, dias_mes: 31, fim_mes: new Date(new Date().getFullYear(), new Date().getMonth()+1, 1).toISOString(), banco_mb: 38.4, mau: 64,
+        partidas_online: 105, cercos_online: 7, msgs: 105*4000 + 7*8000, egress_mb: 790, pico_conexoes: 10, por_dia: pd,
+        banco_partes: [{tabela:"eventos",mb:9.8},{tabela:"partidas_pvp",mb:3.1},{tabela:"mensagens",mb:1.2},{tabela:"perfis",mb:0.4},{tabela:"ao_vivo",mb:0.1}]}; })(),
+    versao: {config:{versao_minima:0, versao_nome:"1.3", novidades:"Tutorial com mãozinha\nNovo modo Cerco\nConvide amigos"}, versoes:[{versao:"1.3",pessoas:9,online:5},{versao:"1.2",pessoas:4,online:2},{versao:"1.1",pessoas:1,online:0}]},
+    gosto: {modos:{campanha:640, batalha_bot:150, cerco_bot:60, cerco_vitorias:27, batalha_online:92, duelo:11, cerco_duelo:4},
+      telas:[{tela:"Personagens",n:120,pessoas:13},{tela:"Ranking",n:88,pessoas:12},{tela:"Social",n:70,pessoas:9},{tela:"Modo PvP",n:66,pessoas:11},{tela:"Dificuldade",n:40,pessoas:12},{tela:"Convidar amigos",n:15,pessoas:6},{tela:"Opções",n:9,pessoas:5}],
+      cartas:[{carta:"elara",usos:540,partidas:300,jogadores:14,vitorias:190},{carta:"arqueiro",usos:410,partidas:260,jogadores:13,vitorias:170},{carta:"nick",usos:330,partidas:200,jogadores:12,vitorias:120},{carta:"esqueletoBlack",usos:210,partidas:120,jogadores:8,vitorias:70},{carta:"esqueletoTita",usos:90,partidas:60,jogadores:6,vitorias:47},{carta:"protetor",usos:80,partidas:70,jogadores:7,vitorias:35},{carta:"sentinela",usos:20,partidas:18,jogadores:4,vitorias:9}],
+      desistencias:[{modo:"campanha",n:14,minuto_medio:1.8,nivel_medio:6.2},{modo:"pvp_bot",n:6,minuto_medio:1.1},{modo:"cerco",n:3,minuto_medio:2.4}],
+      social:{mensagens_chat:340,mensagens_privadas:120,amizades:18,convites_duelo:40,duelos_aceitos:22}},
+    indicacoes: {total: 9, jogaram: 6, top: [{nome:"Daniel", total:5, jogaram:4},{nome:"Luana", total:3, jogaram:2},{nome:"Fabio", total:1, jogaram:0}]},
+    tutorial: {menu:{comecou:14, terminou:9, pulou:5}, jogo:{comecou:12, terminou:8, pulou:4}},
+    tutorial_pulos: [{parte:"jogo", passo:"castelo", n:2},{parte:"menu", passo:"3", n:2},{parte:"menu", passo:"0", n:2},{parte:"jogo", passo:"inicio", n:1},{parte:"jogo", passo:"luta", n:1}],
+    jogadores: jog.map((j,i) => ({...j, tutorial: i % 4 === 0 ? "pulou" : i % 3 ? "terminou" : null})), registro: reg};
+}
+
+// ---------------------------------------------------------------- começo
+if (chave) carregar(); else $("#telaLogin").classList.remove("hide");
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://61hchxmsj25n"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_6eggv"]
+[ext_resource type="Texture2D" uid="uid://jd2i8jl5l7hb" path="res://assets/Esqueleto Black/energia/energia.png" id="2_ml66h"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="3_hctep"]
+
+[sub_resource type="Resource" id="Resource_yc2uc"]
+script = ExtResource("1_6eggv")
+textura = ExtResource("2_ml66h")
+quadros = 120
+cw = 191
+ch = 206
+ax = 98.0
+ay = 205.0
+fps = 9.536424
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("3_hctep")
+id = "esqueletoBlack"
+nome = "Esqueleto Black"
+nome_curto = "Esq. Black"
+descricao = "Medita sentado e solta energia das mãos para os Monsters"
+lado = "monsters"
+par = "elara"
+comportamento = "gerador"
+custo = 50
+recarga = 7.0
+vida = 200
+gera_energia = 25
+cores = PackedColorArray(0.16862746, 0.14117648, 0.2, 1, 0.7882353, 0.8784314, 0.2901961, 1)
+cor_particulas = Color(0.9098039, 0.8745098, 0.78431374, 1)
+anims = Dictionary[String, ExtResource("1_6eggv")]({
+"parado": SubResource("Resource_yc2uc")
+})
+extra = {
+"energia_mao": {
+"quadro": 110,
+"comeca_em": 6.8681,
+"x": 0,
+"y": -58
+}
+}

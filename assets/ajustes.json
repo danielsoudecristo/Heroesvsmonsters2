@@ -1,0 +1,86 @@
+{
+  "herois": {
+    "elara": {
+      "velocidade": 30,
+      "passo": 0,
+      "para": 45,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "nick": {
+      "velocidade": 40,
+      "passo": 3.5,
+      "para": 45,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "arqueiro": {
+      "velocidade": 40,
+      "passo": 7.5,
+      "para": 330,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "protetor": {
+      "velocidade": 40,
+      "passo": 4.42,
+      "para": 45,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "mago": {
+      "velocidade": 40,
+      "passo": 3.76,
+      "para": 270,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "magoFogo": {
+      "velocidade": 40,
+      "passo": 5.63,
+      "para": 270,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    },
+    "sentinela": {
+      "velocidade": 40,
+      "passo": 4.57,
+      "para": 60,
+      "pausa": 0.35,
+      "tamanho": 1,
+      "deslocX": 0
+    }
+  },
+  "monstros": {
+    "esqueleto": {
+      "velocidade": 34,
+      "fpsAndar": 23.5
+    },
+    "esqueletoFogo": {
+      "velocidade": 30,
+      "fpsAndar": 15.2
+    },
+    "esqueletoArqueiro": {
+      "velocidade": 26,
+      "fpsAndar": 12
+    },
+    "esqueletoProtetor": {
+      "velocidade": 24,
+      "fpsAndar": 16
+    },
+    "esqueletoMago": {
+      "velocidade": 22,
+      "fpsAndar": 20
+    },
+    "esqueletoTita": {
+      "velocidade": 30,
+      "fpsAndar": 11
+    }
+  }
+}

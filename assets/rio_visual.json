@@ -1,0 +1,80 @@
+{
+  "muralha": {
+    "x": 4,
+    "y": 4
+  },
+  "arco": {
+    "x": 0,
+    "y": -2,
+    "largura": 186,
+    "altura": 40
+  },
+  "torreEsq": {
+    "x": -27,
+    "y": 5
+  },
+  "torreDir": {
+    "x": 21,
+    "y": 8
+  },
+  "fogoEsq": {
+    "x": 0,
+    "y": 0,
+    "tamanho": 26
+  },
+  "fogoDir": {
+    "x": 0,
+    "y": 0,
+    "tamanho": 26
+  },
+  "ponteA": {
+    "x": 0,
+    "y": 0
+  },
+  "ponteB": {
+    "x": 0,
+    "y": -1
+  },
+  "ponteC": {
+    "x": 0,
+    "y": 0
+  },
+  "ponteD": {
+    "x": 0,
+    "y": 0
+  },
+  "ponteE": {
+    "x": 0,
+    "y": 0
+  },
+  "pontes": {
+    "altura": 32,
+    "acimaDoPe": 27,
+    "largura": 0
+  },
+  "calcada": {
+    "y": 0
+  },
+  "cores": {
+    "tijolo1": "#9c9891",
+    "tijolo2": "#86827c",
+    "tijolo3": "#726e69",
+    "argamassa": "#2a2622",
+    "arcoDentro": "#07090f",
+    "grade": "#28282e",
+    "madeira1": "#9a6a3c",
+    "madeira2": "#86592f",
+    "madeira3": "#734b27",
+    "corrimao": "#9a6a3c",
+    "poste": "#86592f",
+    "viga": "#734b27",
+    "laje1": "#7d8798",
+    "laje2": "#6f798a",
+    "aguaBorda": "#4aa3b8",
+    "aguaMeio": "#1f6a8f",
+    "terra": "#7a5a3a",
+    "terraEscura": "#5c4128",
+    "grama": "#5f8a3a",
+    "pedrinha": "#8d8a86"
+  }
+}

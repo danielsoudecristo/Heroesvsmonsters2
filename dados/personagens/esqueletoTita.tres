@@ -1,0 +1,131 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://5w3fhm4jjuhi"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_rqacw"]
+[ext_resource type="Texture2D" uid="uid://dbils8pos7q4l" path="res://assets/Esqueleto Tita/andando/andando.png" id="2_xvsxr"]
+[ext_resource type="Texture2D" uid="uid://dcu713aqm42ds" path="res://assets/Esqueleto Tita/parado/parado.png" id="3_uesni"]
+[ext_resource type="Texture2D" uid="uid://chne10mi1uah7" path="res://assets/Esqueleto Tita/socando no chao/socando_no_chao.png" id="4_13axj"]
+[ext_resource type="Texture2D" uid="uid://dn0xgdpa12na7" path="res://assets/Esqueleto Tita/lutando/lutando.png" id="5_x2xhd"]
+[ext_resource type="Texture2D" uid="uid://bg0xqqr3oy757" path="res://assets/Esqueleto/morrendo/morrendo.png" id="6_ytmgm"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="7_wq6wr"]
+
+[sub_resource type="Resource" id="Resource_gjiat"]
+script = ExtResource("1_rqacw")
+textura = ExtResource("2_xvsxr")
+quadros = 126
+cw = 167
+ch = 205
+ax = 93.0
+ay = 203.0
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_a1wjb"]
+script = ExtResource("1_rqacw")
+textura = ExtResource("5_x2xhd")
+quadros = 151
+cw = 258
+ch = 184
+ax = 93.0
+ay = 180.0
+fps = 38.0
+escala = 1.154
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(39, 104)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_aipjf"]
+script = ExtResource("1_rqacw")
+textura = ExtResource("4_13axj")
+quadros = 151
+cw = 160
+ch = 181
+ax = 79.0
+ay = 173.0
+fps = 36.0
+escala = 1.154
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(42, 115)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_c0xbi"]
+script = ExtResource("1_rqacw")
+textura = ExtResource("6_ytmgm")
+quadros = 19
+cw = 235
+ch = 195
+ax = 132.0
+ay = 183.0
+fps = 9.0
+escala = 1.07
+repetir = false
+olha_direita = true
+caido = 1.4
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_ldxk0"]
+script = ExtResource("1_rqacw")
+textura = ExtResource("3_uesni")
+cols = 5
+quadros = 20
+cw = 190
+ch = 216
+ax = 95.0
+ay = 212.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("7_wq6wr")
+id = "esqueletoTita"
+nome = "Esqueleto Titã"
+nome_curto = "Titã"
+descricao = "Gigante: soca o chão e ergue ossos na linha, e luta com quem chega perto"
+lado = "monsters"
+par = "sentinela"
+comportamento = "tita"
+custo = 325
+recarga = 25.0
+vida = 1650
+dano = 65
+alcance = 120.0
+velocidade = 58.0
+dano_castelo = 40
+escala = 0.89
+cores = PackedColorArray(0.9019608, 0.8666667, 0.78431374, 1, 0.3529412, 0.27450982, 0.21176471, 1)
+cor_particulas = Color(0.9098039, 0.8745098, 0.78431374, 1)
+barra_y = 190.0
+anims = Dictionary[String, ExtResource("1_rqacw")]({
+"andar": SubResource("Resource_gjiat"),
+"atacar": SubResource("Resource_a1wjb"),
+"especial": SubResource("Resource_aipjf"),
+"morrer": SubResource("Resource_c0xbi"),
+"parado": SubResource("Resource_ldxk0")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"golpe": "Esqueleto Tita/som/soco",
+"morrer": "Esqueleto/morrendo/som",
+"ossos": "Esqueleto Tita/som/ossos",
+"passos": "Esqueleto Tita/som/passo"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.9,
+"golpe": 0.9,
+"morrer": 0.9,
+"ossos": 0.9,
+"passos": 0.5
+})
+extra = {
+	"dano_ossos": 95,
+	"minimo_ossos": 4,
+"passos_por_ciclo": 6,
+"quadros_impacto": [42, 115],
+"recarga_ossos": 7,
+"velocidade_ossos": 600
+}

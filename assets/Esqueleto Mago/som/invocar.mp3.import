@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://w022acovs3kv"
+path="res://.godot/imported/invocar.mp3-c511ddcde91a0751989958824e61159a.mp3str"
+
+[deps]
+
+source_file="res://assets/Esqueleto Mago/som/invocar.mp3"
+dest_files=["res://.godot/imported/invocar.mp3-c511ddcde91a0751989958824e61159a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

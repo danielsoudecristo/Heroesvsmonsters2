@@ -1,0 +1,114 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://ctcrf60m0u2bl"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_t0i4p"]
+[ext_resource type="Texture2D" uid="uid://x7m3l36x4c8t" path="res://assets/Mago de Fogo/parado/parado.png" id="2_ufxfo"]
+[ext_resource type="Texture2D" uid="uid://uoknyvx8gkvr" path="res://assets_otimizados/Mago de Fogo/andando/andando_230x252.png" id="2_wjc1t"]
+[ext_resource type="Texture2D" uid="uid://0njxmo2654ft" path="res://assets/Mago de Fogo/atacando/atacando.png" id="3_wjc1t"]
+[ext_resource type="Texture2D" uid="uid://u7mahgdjrynt" path="res://assets/Mago de Fogo/morrendo/morrendo.png" id="4_yppbp"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_31mub"]
+
+[sub_resource type="Resource" id="Resource_wjc1t"]
+script = ExtResource("1_t0i4p")
+textura = ExtResource("2_wjc1t")
+cols = 13
+quadros = 147
+cw = 230
+ch = 252
+ax = 143.41893687707642
+ay = 246.38239202657806
+fps = 18.0
+escala = 0.7692307692307693
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_1im24"]
+script = ExtResource("1_t0i4p")
+textura = ExtResource("3_wjc1t")
+quadros = 151
+cw = 339
+ch = 202
+ax = 181.0
+ay = 198.0
+fps = 40.0
+repetir = false
+quadros_acao = PackedInt32Array(103)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_jxdmu"]
+script = ExtResource("1_t0i4p")
+textura = ExtResource("4_yppbp")
+quadros = 151
+cw = 348
+ch = 211
+ax = 168.0
+ay = 202.0
+fps = 32.0
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_q658d"]
+script = ExtResource("1_t0i4p")
+textura = ExtResource("2_ufxfo")
+quadros = 24
+cw = 175
+ch = 191
+ax = 96.0
+ay = 188.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_31mub")
+id = "magoFogo"
+nome = "Mago de Fogo"
+nome_curto = "Mago Fogo"
+descricao = "Lança uma bola de fogo que explode em chamas"
+par = "esqueletoFogo"
+comportamento = "mago"
+custo = 200
+recarga = 12.0
+vida = 270
+dano = 50
+intervalo_ataque = 0.6
+escala = 0.65
+cores = PackedColorArray(1, 0.8509804, 0.6901961, 1, 0.72156864, 0.2, 0.10980392, 1)
+anims = Dictionary[String, ExtResource("1_t0i4p")]({
+"andar": SubResource("Resource_wjc1t"),
+"atacar": SubResource("Resource_1im24"),
+"morrer": SubResource("Resource_jxdmu"),
+"parado": SubResource("Resource_q658d")
+})
+sons = Dictionary[String, String]({
+"impacto": "Mago de Fogo/som/explosao",
+"magia": "Mago de Fogo/som/magia",
+"morrer": "Mago de Fogo/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"impacto": 0.8,
+"magia": 0.7,
+"morrer": 0.8
+})
+extra = {
+"andar": {
+"para": 270.0,
+"pausa": 0.35,
+"velocidade": 39.0
+},
+"brilho_cajado": {
+"estilo": "fogo",
+"raio": 16,
+"x": -42,
+"y": -104
+},
+	"magia": {
+	"dano": 60,
+	"dano_area": 55,
+	"estilo": "fogo",
+	"raio": 110,
+	"saida_x": 50,
+"saida_y": -79,
+"velocidade": 400
+}
+}

@@ -1,0 +1,128 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://yb2iflw0lgcj"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_yksx3"]
+[ext_resource type="Texture2D" uid="uid://dvnjoo2w7j3j6" path="res://assets_otimizados/Cavaleiro Sentinela/atacando/atacando_379x216.png" id="2_yksx3"]
+[ext_resource type="Texture2D" uid="uid://dywa6c0kdo1nc" path="res://assets_otimizados/Cavaleiro Sentinela/espada no chao/espada_no_chao_379x216.png" id="3_kq651"]
+[ext_resource type="Texture2D" uid="uid://do3gxvtcc4rj1" path="res://assets_otimizados/Cavaleiro Sentinela/morrendo/morrendo_327x218.png" id="4_3ilro"]
+[ext_resource type="Texture2D" uid="uid://dqvws5fwwurmr" path="res://assets_otimizados/Cavaleiro Sentinela/em guarda/em_guarda_379x216.png" id="5_3yujj"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="6_11l7g"]
+[ext_resource type="Texture2D" uid="uid://bgu3uoyasrn0h" path="res://assets/Cavaleiro Sentinela/andando/andando.png" id="6_kq651"]
+
+[sub_resource type="Resource" id="Resource_3ilro"]
+script = ExtResource("1_yksx3")
+textura = ExtResource("6_kq651")
+quadros = 97
+cw = 380
+ch = 307
+ax = 192.72353846153848
+ay = 300.05566153846155
+fps = 18.0
+escala = 0.6046511627906977
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_e655g"]
+script = ExtResource("1_yksx3")
+textura = ExtResource("2_yksx3")
+cols = 10
+quadros = 151
+cw = 379
+ch = 216
+ax = 187.984
+ay = 211.0104
+fps = 36.0
+repetir = false
+quadros_acao = PackedInt32Array(43, 123)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_6obco"]
+script = ExtResource("1_yksx3")
+textura = ExtResource("3_kq651")
+cols = 10
+quadros = 151
+cw = 379
+ch = 216
+ax = 187.984
+ay = 211.0104
+fps = 34.0
+repetir = false
+quadros_acao = PackedInt32Array(49)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_0ftme"]
+script = ExtResource("1_yksx3")
+textura = ExtResource("4_3ilro")
+cols = 11
+quadros = 151
+cw = 327
+ch = 218
+ax = 170.0
+ay = 213.0
+fps = 36.0
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+quadro_chao = 125
+
+[sub_resource type="Resource" id="Resource_n64dk"]
+script = ExtResource("1_yksx3")
+textura = ExtResource("5_3yujj")
+cols = 10
+quadros = 151
+cw = 379
+ch = 216
+ax = 187.984
+ay = 211.0104
+fps = 24.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("6_11l7g")
+id = "sentinela"
+nome = "Cavaleiro Sentinela"
+nome_curto = "Sentinela"
+descricao = "Gigante: golpeia, defende e crava a espada para erguer a terra na linha"
+par = "esqueletoTita"
+comportamento = "sentinela"
+custo = 325
+recarga = 25.0
+vida = 1650
+dano = 65
+alcance = 150.0
+defesa = 0.7
+escala = 0.9
+cores = PackedColorArray(0.84313726, 0.8862745, 0.96862745, 1, 0.16862746, 0.2901961, 0.56078434, 1)
+anims = Dictionary[String, ExtResource("1_yksx3")]({
+"andar": SubResource("Resource_3ilro"),
+"atacar": SubResource("Resource_e655g"),
+"especial": SubResource("Resource_6obco"),
+"morrer": SubResource("Resource_0ftme"),
+"parado": SubResource("Resource_n64dk")
+})
+sons = Dictionary[String, String]({
+"bloqueio": "Cavaleiro Sentinela/som/escudo",
+"golpe": "Cavaleiro Sentinela/som/golpe",
+"morrer": "Cavaleiro Sentinela/morrendo/som",
+"terra": "Cavaleiro Sentinela/som/terra"
+})
+volumes = Dictionary[String, float]({
+"bloqueio": 0.7,
+"golpe": 0.8,
+"morrer": 0.9,
+"terra": 0.9
+})
+extra = {
+"andar": {
+"para": 60.0,
+"pausa": 0.35,
+"velocidade": 44.0
+},
+	"dano_terra": 110,
+	"minimo_para_terra": 4,
+"quadro_impacto": 49,
+"quadros_defesa": [64, 92],
+"recarga_terra": 6,
+"velocidade_onda": 650
+}

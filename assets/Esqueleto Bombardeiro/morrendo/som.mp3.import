@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b14ffr2svmoa5"
+path="res://.godot/imported/som.mp3-915411a920643ccf26b95f7d5f54f55d.mp3str"
+
+[deps]
+
+source_file="res://assets/Esqueleto Bombardeiro/morrendo/som.mp3"
+dest_files=["res://.godot/imported/som.mp3-915411a920643ccf26b95f7d5f54f55d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,29 @@
+PARTE — PvP ONLINE (Godot contra Godot)
+=======================================
+
+1) ARQUIVOS (copie por cima, dentro de C:\Users\danie\Music\HvM Godot)
+   scripts/sistema/rede_pvp.gd   (NOVO: canal ao vivo da partida, sem plugin)
+   scripts/sistema/conta.gd      (+ token para o canal)
+   scripts/sistema/perfil.gd     (+ pvp_sala)
+   scripts/intro/intro.gd        (a busca agora procura gente de verdade no servidor)
+   scripts/pvp/arena_pvp.gd      (partida online em lockstep)
+   supabase/8_pvp_godot.sql      (vai para o Supabase, não para o jogo)
+
+2) SUPABASE (uma vez só)
+   Supabase > SQL Editor > New query > cole TODO o 8_pvp_godot.sql > Run.
+   (O site continua funcionando igual. Quem joga no Godot só encontra quem joga no Godot.)
+
+3) TESTAR (precisa de 2 aparelhos com 2 contas Google diferentes)
+   - Entre com a conta Google nos dois.
+   - Um escolhe Heroes, o outro Monsters.
+   - Os dois tocam em "Batalha PvP" quase juntos (a busca dura 10 s).
+   - Deve aparecer "Adversário encontrado!" com o NOME da outra conta.
+   - Sem conta (convidado) continua sendo contra o bot.
+
+COMO FUNCIONA
+   - Igual ao jogo.js: os dois aparelhos rodam a MESMA partida (mesma semente) e só trocam as jogadas.
+   - Turnos de 10 passos; a jogada vale 3 turnos depois (meio segundo). A tropa aparece clarinha até "chegar".
+   - Se o outro sumir por 20 s (ou sair), você vence por W.O.
+   - Botão de pausa no online = "Desistir" (a partida não para).
+   - Fim: o servidor grava. Vitória +30 troféus +50 moedas; derrota −20 troféus +15 moedas; empate +25 moedas.
+   - O nível de cada personagem vem do servidor (não dá para trapacear mudando o aparelho).

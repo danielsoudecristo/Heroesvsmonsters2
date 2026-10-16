@@ -1,0 +1,135 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_anim"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="2_ficha"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Darian/andando/andando_250x332.png" id="3_andar"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Darian/parado/parado_237x326.png" id="4_parado"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Darian/golpe1/golpe1_369x331.png" id="5_golpe1"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Darian/golpe2/golpe2_436x388.png" id="6_golpe2"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Guerreiro Darian/morrendo/morrendo_439x259.png" id="7_morrer"]
+
+[sub_resource type="Resource" id="Resource_andar"]
+script = ExtResource("1_anim")
+textura = ExtResource("3_andar")
+cols = 16
+quadros = 97
+cw = 250
+ch = 332
+ax = 120.23
+ay = 320.61
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_anim")
+textura = ExtResource("4_parado")
+cols = 1
+quadros = 1
+cw = 237
+ch = 326
+ax = 120.09
+ay = 316.72
+fps = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe1"]
+script = ExtResource("1_anim")
+textura = ExtResource("5_golpe1")
+cols = 11
+quadros = 121
+cw = 369
+ch = 331
+ax = 139.46
+ay = 320.91
+fps = 40.0
+escala = 1.25
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe2"]
+script = ExtResource("1_anim")
+textura = ExtResource("6_golpe2")
+cols = 9
+quadros = 81
+cw = 436
+ch = 388
+ax = 150.44
+ay = 378.74
+fps = 30.0
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(27, 53)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_morrer"]
+script = ExtResource("1_anim")
+textura = ExtResource("7_morrer")
+cols = 9
+quadros = 117
+cw = 439
+ch = 259
+ax = 230.7
+ay = 248.49
+fps = 30.0
+escala = 1.25
+repetir = false
+olha_direita = true
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+quadro_chao = 60
+
+[resource]
+script = ExtResource("2_ficha")
+id = "darian"
+nome = "Guerreiro Darian"
+nome_curto = "Darian"
+descricao = "Martelo sagrado: BLOQUEIA o fogo do Golem e as ondas no chão, e arremessa os inimigos 5 casas para trás"
+lado = "heroes"
+par = "golemOssos"
+comportamento = "darian"
+custo = 300
+recarga = 22.0
+desbloqueio_trofeus = 800
+vida = 1300
+dano = 75
+defesa = 0.6
+alcance = 130.0
+intervalo_ataque = 1.6
+dano_castelo = 30
+escala = 0.5
+cores = PackedColorArray(0.95, 0.82, 0.5, 1, 0.12, 0.22, 0.5, 1)
+cor_particulas = Color(1, 0.85, 0.45, 1)
+barra_y = 175.0
+anims = Dictionary[String, ExtResource("1_anim")]({
+"andar": SubResource("Resource_andar"),
+"atacar": SubResource("Resource_golpe2"),
+"especial": SubResource("Resource_golpe1"),
+"morrer": SubResource("Resource_morrer"),
+"parado": SubResource("Resource_parado")
+})
+sons = Dictionary[String, String]({
+"bloqueio": "Guerreiro Protetor/som/bloqueio",
+"golpe": "Guerreiro Darian/batida do martelo",
+"morrer": "Guerreiro Protetor/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"bloqueio": 1.0,
+"golpe": 1.0,
+"morrer": 0.9
+})
+extra = {
+"andar": {
+"para": 80.0,
+"pausa": 0.35,
+"velocidade": 45.0
+},
+"casas_arremesso": 5,
+"dano_pouso": 2.2
+}

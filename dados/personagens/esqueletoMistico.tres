@@ -1,0 +1,140 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_anim"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="2_ficha"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Místico/andando/andando_185x268.png" id="3_andar"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Místico/parado/parado_144x264.png" id="4_parado"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Místico/golpe1/golpe1_222x263.png" id="5_golpe1"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Místico/golpe2/golpe2_250x264.png" id="6_golpe2"]
+[ext_resource type="Texture2D" path="res://assets_otimizados/Esqueleto Místico/morrendo/morrendo_500x256.png" id="7_morrer"]
+
+[sub_resource type="Resource" id="Resource_andar"]
+script = ExtResource("1_anim")
+textura = ExtResource("3_andar")
+cols = 22
+quadros = 59
+cw = 185
+ch = 268
+ax = 86.95
+ay = 256.62
+fps = 18.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_anim")
+textura = ExtResource("4_parado")
+cols = 1
+quadros = 1
+cw = 144
+ch = 264
+ax = 68.06
+ay = 256.53
+fps = 1.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe1"]
+script = ExtResource("1_anim")
+textura = ExtResource("5_golpe1")
+cols = 18
+quadros = 140
+cw = 222
+ch = 263
+ax = 77.68
+ay = 255.46
+fps = 42.0
+repetir = false
+quadros_acao = PackedInt32Array(104)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_golpe2"]
+script = ExtResource("1_anim")
+textura = ExtResource("6_golpe2")
+cols = 16
+quadros = 181
+cw = 250
+ch = 264
+ax = 86.91
+ay = 256.53
+fps = 45.0
+repetir = false
+quadros_acao = PackedInt32Array(104)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_morrer"]
+script = ExtResource("1_anim")
+textura = ExtResource("7_morrer")
+cols = 8
+quadros = 84
+cw = 500
+ch = 256
+ax = 232.56
+ay = 252.11
+fps = 24.0
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+quadro_chao = 58
+
+[resource]
+script = ExtResource("2_ficha")
+id = "esqueletoMistico"
+nome = "Esqueleto Místico"
+nome_curto = "Místico"
+descricao = "Suporte: CURA os esqueletos, invoca 3 Esqueletos de Fogo e, cada vez que aponta o dedo, lança um raio de fogo que possui o corpo do inimigo"
+lado = "monsters"
+par = "aura"
+comportamento = "mistico"
+custo = 275
+recarga = 20.0
+desbloqueio_trofeus = 1500
+vida = 420
+dano = 0
+alcance = 450.0
+intervalo_ataque = 1.0
+velocidade = 32.0
+dano_castelo = 20
+escala = 0.5
+cores = PackedColorArray(0.55, 0.85, 1, 1, 0.22, 0.12, 0.35, 1)
+cor_particulas = Color(0.45, 1, 0.75, 1)
+barra_y = 140.0
+anims = Dictionary[String, ExtResource("1_anim")]({
+"andar": SubResource("Resource_andar"),
+"atacar": SubResource("Resource_golpe2"),
+"especial": SubResource("Resource_golpe1"),
+"morrer": SubResource("Resource_morrer"),
+"parado": SubResource("Resource_parado")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"cura": "Elara/som/energia",
+"invocar": "Esqueleto Mago/som/invocar",
+"dedo": "Mago de Fogo/som/magia",
+"fogo": "Esqueleto de Fogo/som/fogo",
+"morrer": "Esqueleto/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.9,
+"cura": 1.0,
+"invocar": 1.0,
+"dedo": 0.75,
+"fogo": 0.8,
+"morrer": 0.9
+})
+extra = {
+"alcance_cura": 520,
+"cura": 90,
+"dano_fogo": 45,
+"dedo": {"atacar": [243, 62], "especial": [213, 56]},
+"dedo_quadros": {"atacar": [104, 138, 170], "especial": [108]},
+"queima": [2.4, 8],
+"recarga_fogo": 1.5,
+"invoca": "esqueletoFogo",
+"para_na_coluna": 7,
+"quantos": 3,
+"recarga_cura": 8,
+"recarga_invocar": 20,
+"vida_invocados": 0.5
+}

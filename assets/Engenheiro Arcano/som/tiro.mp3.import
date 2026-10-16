@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://beinuiffqmiy4"
+path="res://.godot/imported/tiro.mp3-1da6c2ae319841a61ea127870e9d7997.mp3str"
+
+[deps]
+
+source_file="res://assets/Engenheiro Arcano/som/tiro.mp3"
+dest_files=["res://.godot/imported/tiro.mp3-1da6c2ae319841a61ea127870e9d7997.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,110 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://b1aaqgvac45ex"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_7olu2"]
+[ext_resource type="Texture2D" uid="uid://c4h8d1rfcppge" path="res://assets/Esqueleto Protetor/andando/andando.png" id="2_vijpw"]
+[ext_resource type="Texture2D" uid="uid://dfoa5frd75jsh" path="res://assets_otimizados/Esqueleto Protetor/socando/socando_240x200.png" id="3_3sbge"]
+[ext_resource type="Texture2D" uid="uid://bg0xqqr3oy757" path="res://assets/Esqueleto/morrendo/morrendo.png" id="4_uf0g2"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_xf780"]
+[ext_resource type="Texture2D" uid="uid://cfcel6bxqq5rr" path="res://assets/Esqueleto Protetor/parado/parado_repouso.png" id="6_parado"]
+
+[sub_resource type="Resource" id="Resource_6hp1o"]
+script = ExtResource("1_7olu2")
+textura = ExtResource("2_vijpw")
+quadros = 35
+cw = 135
+ch = 189
+ax = 76.0
+ay = 188.0
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_52ona"]
+script = ExtResource("1_7olu2")
+textura = ExtResource("3_3sbge")
+quadros = 151
+cw = 240
+ch = 200
+ax = 78.0
+ay = 200.0
+fps = 44.0
+escala = 0.994737
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(64)
+quadros_som = PackedInt32Array(64)
+
+[sub_resource type="Resource" id="Resource_tepb8"]
+script = ExtResource("1_7olu2")
+textura = ExtResource("4_uf0g2")
+quadros = 19
+cw = 235
+ch = 195
+ax = 132.0
+ay = 183.0
+escala = 0.918
+repetir = false
+olha_direita = true
+caido = 1.2
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_parado"]
+script = ExtResource("1_7olu2")
+textura = ExtResource("6_parado")
+cols = 8
+quadros = 8
+cw = 145
+ch = 199
+ax = 72.5
+ay = 195.0
+fps = 10.0
+escala = 1.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_xf780")
+id = "esqueletoProtetor"
+nome = "Esqueleto Protetor"
+descricao = "Anda de escudo erguido e bloqueia metade do dano"
+lado = "monsters"
+par = "protetor"
+comportamento = "escudo"
+custo = 75
+recarga = 18.0
+vida = 660
+dano = 20
+alcance = 60.0
+velocidade = 39.0
+defesa = 0.55
+escala = 0.61
+cores = PackedColorArray(0.8509804, 0.8745098, 0.91764706, 1, 0.29411766, 0.3529412, 0.47058824, 1)
+cor_particulas = Color(0.9098039, 0.8745098, 0.78431374, 1)
+anims = Dictionary[String, ExtResource("1_7olu2")]({
+"parado": SubResource("Resource_parado"),
+"andar": SubResource("Resource_6hp1o"),
+"atacar": SubResource("Resource_52ona"),
+"morrer": SubResource("Resource_tepb8")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"atacar": "Esqueleto Protetor/som/golpe",
+"escudo": "Esqueleto Protetor/som/escudo",
+"morrer": "Esqueleto/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.8,
+"atacar": 0.7,
+"escudo": 0.8,
+"morrer": 0.8
+})
+extra = {
+"escudo": {
+"raio": 26,
+"x": 15,
+"y": -52
+}
+}

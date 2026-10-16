@@ -1,0 +1,113 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://dstmxb1ujqo54"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_5xg1d"]
+[ext_resource type="Texture2D" uid="uid://d1c57wa0pe7nm" path="res://assets/Mago/parado/parado.png" id="2_2ngkw"]
+[ext_resource type="Texture2D" uid="uid://bwidw434nd44m" path="res://assets_otimizados/Mago/andando/andando_229x248.png" id="2_b4toi"]
+[ext_resource type="Texture2D" uid="uid://d1f5s5bh4d0y8" path="res://assets_otimizados/Mago/morrendo/morrendo_380x217.png" id="3_5xg1d"]
+[ext_resource type="Texture2D" uid="uid://dkm6nrgjql1ke" path="res://assets/Mago/atacando/atacando.png" id="3_b4toi"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="5_qpj05"]
+
+[sub_resource type="Resource" id="Resource_b4toi"]
+script = ExtResource("1_5xg1d")
+textura = ExtResource("2_b4toi")
+cols = 12
+quadros = 115
+cw = 229
+ch = 248
+ax = 143.86686666666665
+ay = 243.42853333333335
+fps = 18.0
+escala = 0.8064516129032259
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_h2scf"]
+script = ExtResource("1_5xg1d")
+textura = ExtResource("3_b4toi")
+quadros = 151
+cw = 189
+ch = 197
+ax = 68.0
+ay = 195.0
+fps = 40.0
+repetir = false
+quadros_acao = PackedInt32Array(91)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_m4a2m"]
+script = ExtResource("1_5xg1d")
+textura = ExtResource("3_5xg1d")
+cols = 10
+quadros = 151
+cw = 380
+ch = 217
+ax = 191.0
+ay = 208.0
+fps = 32.0
+repetir = false
+caido = 0.8
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_35bx5"]
+script = ExtResource("1_5xg1d")
+textura = ExtResource("2_2ngkw")
+quadros = 12
+cw = 126
+ch = 201
+ax = 68.0
+ay = 199.0
+fps = 8.0
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("5_qpj05")
+id = "mago"
+nome = "Mago"
+descricao = "Lança uma esfera de energia que explode no inimigo"
+par = "esqueletoMago"
+comportamento = "mago"
+custo = 175
+recarga = 10.0
+vida = 300
+dano = 55
+intervalo_ataque = 0.6
+escala = 0.62
+cores = PackedColorArray(0.83137256, 0.8901961, 1, 1, 0.18431373, 0.30980393, 0.65882355, 1)
+anims = Dictionary[String, ExtResource("1_5xg1d")]({
+"andar": SubResource("Resource_b4toi"),
+"atacar": SubResource("Resource_h2scf"),
+"morrer": SubResource("Resource_m4a2m"),
+"parado": SubResource("Resource_35bx5")
+})
+sons = Dictionary[String, String]({
+"impacto": "Mago/som/explosao",
+"magia": "Mago/som/magia",
+"morrer": "Mago/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"impacto": 0.7,
+"magia": 0.7,
+"morrer": 0.8
+})
+extra = {
+"andar": {
+"para": 270.0,
+"pausa": 0.35,
+"velocidade": 28.0
+},
+"brilho_cajado": {
+"raio": 20,
+"x": -27,
+"y": -106
+},
+"magia": {
+"dano": 70,
+"dano_area": 30,
+"raio": 75,
+"saida_x": 37,
+"saida_y": -82,
+"velocidade": 430
+}
+}

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bewfjtsi05i45"
+path="res://.godot/imported/som.mp3-c556c7be9fbdaae842c7b68e50678d64.mp3str"
+
+[deps]
+
+source_file="res://assets/Cavaleiro Sentinela/morrendo/som.mp3"
+dest_files=["res://.godot/imported/som.mp3-c556c7be9fbdaae842c7b68e50678d64.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

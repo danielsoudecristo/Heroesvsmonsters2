@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://befn28dyjw56t"
+path="res://.godot/imported/magia.mp3-b904646923a93373f0c166e5cd33c34e.mp3str"
+
+[deps]
+
+source_file="res://assets/Esqueleto Mago/som/magia.mp3"
+dest_files=["res://.godot/imported/magia.mp3-b904646923a93373f0c166e5cd33c34e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

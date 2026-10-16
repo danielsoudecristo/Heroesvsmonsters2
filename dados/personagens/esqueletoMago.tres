@@ -1,0 +1,117 @@
+[gd_resource type="Resource" script_class="PersonagemDados" format=3 uid="uid://cw8jtuie4ea7q"]
+
+[ext_resource type="Script" uid="uid://bx8fhkv120n3i" path="res://scripts/dados/anim_dados.gd" id="1_h20pa"]
+[ext_resource type="Texture2D" uid="uid://dbpuqifgrm6n0" path="res://assets/Esqueleto Mago/parado/parado.png" id="2_5kii3"]
+[ext_resource type="Texture2D" uid="uid://bcilcv60y2x86" path="res://assets/Esqueleto Mago/andando/andando.png" id="3_0j4pk"]
+[ext_resource type="Texture2D" uid="uid://uoeftun88cbt" path="res://assets/Esqueleto Mago/atirando/atirando.png" id="4_im1ph"]
+[ext_resource type="Texture2D" uid="uid://bg0xqqr3oy757" path="res://assets/Esqueleto/morrendo/morrendo.png" id="5_7hefj"]
+[ext_resource type="Script" uid="uid://dwfrm3l6fqlvo" path="res://scripts/dados/personagem_dados.gd" id="6_lqcew"]
+
+[sub_resource type="Resource" id="Resource_wwu3g"]
+script = ExtResource("1_h20pa")
+textura = ExtResource("3_0j4pk")
+quadros = 82
+cw = 200
+ch = 206
+ax = 91.0
+ay = 204.0
+fps = 18.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_lw53c"]
+script = ExtResource("1_h20pa")
+textura = ExtResource("4_im1ph")
+quadros = 151
+cw = 299
+ch = 204
+ax = 160.0
+ay = 200.0
+fps = 40.0
+repetir = false
+olha_direita = true
+quadros_acao = PackedInt32Array(94)
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_7djb7"]
+script = ExtResource("1_h20pa")
+textura = ExtResource("5_7hefj")
+quadros = 19
+cw = 235
+ch = 195
+ax = 132.0
+ay = 183.0
+escala = 0.966
+repetir = false
+olha_direita = true
+caido = 1.2
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[sub_resource type="Resource" id="Resource_6xs6r"]
+script = ExtResource("1_h20pa")
+textura = ExtResource("2_5kii3")
+quadros = 12
+cw = 150
+ch = 201
+ax = 57.0
+ay = 199.0
+fps = 8.0
+olha_direita = true
+quadros_acao = PackedInt32Array()
+quadros_som = PackedInt32Array()
+
+[resource]
+script = ExtResource("6_lqcew")
+id = "esqueletoMago"
+nome = "Esqueleto Mago"
+descricao = "Para de longe, lança magia e invoca esqueletos do chão"
+lado = "monsters"
+par = "mago"
+comportamento = "necro"
+custo = 175
+recarga = 10.0
+vida = 300
+dano = 55
+alcance = 520.0
+intervalo_ataque = 0.8
+velocidade = 35.0
+escala = 0.58
+cores = PackedColorArray(0.84705883, 0.8, 0.9607843, 1, 0.2901961, 0.18431373, 0.47843137, 1)
+cor_particulas = Color(0.9098039, 0.8745098, 0.78431374, 1)
+anims = Dictionary[String, ExtResource("1_h20pa")]({
+"andar": SubResource("Resource_wwu3g"),
+"atacar": SubResource("Resource_lw53c"),
+"morrer": SubResource("Resource_7djb7"),
+"parado": SubResource("Resource_6xs6r")
+})
+sons = Dictionary[String, String]({
+"aparecer": "Esqueleto/som/esqueleto",
+"impacto": "Esqueleto Mago/som/explosao",
+"invocar": "Esqueleto Mago/som/invocar",
+"magia": "Esqueleto Mago/som/magia",
+"morrer": "Esqueleto/morrendo/som"
+})
+volumes = Dictionary[String, float]({
+"aparecer": 0.8,
+"impacto": 0.6,
+"invocar": 0.8,
+"magia": 0.7,
+"morrer": 0.8
+})
+extra = {
+"brilho_cajado": {
+"raio": 14,
+"x": -37,
+"y": -93
+},
+"estilo": "sombra",
+"invoca": "esqueleto",
+"para_na_coluna": 7,
+"quantos": 3,
+"saida_x": 53,
+"saida_y": -59,
+"tiros_para_invocar": 5,
+"velocidade_magia": 380
+}

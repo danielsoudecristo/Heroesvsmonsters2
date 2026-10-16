@@ -1,0 +1,36 @@
+PARTE 2 — ARENA, COMBATE E CAMPANHA (+ otimizador de folhas)
+=============================================================
+
+1) Copie as pastas  scripts/  ferramentas/  cenas/  para dentro de  C:\Users\danie\Music\HvM Godot
+   (pode substituir o galeria.gd: ele foi corrigido para os heróis olharem para o lado certo).
+
+2) Projeto > Configurações do Projeto > Globais (Autoload) > adicione mais um:
+   - Caminho: res://scripts/sistema/sons.gd
+   - Nome:    Sons
+   (o Catalogo continua lá; os dois precisam estar marcados como "Ativar").
+
+3) OTIMIZAR AS FOLHAS (deixa o jogo leve no celular):
+   - Abra ferramentas/otimizar_folhas.gd e aperte Ctrl+Shift+X.
+   - Ele cria a pasta assets_otimizados/ (os originais em assets/ não mudam) e atualiza as fichas.
+   - Se aparecer "RODE ESTE SCRIPT MAIS UMA VEZ", espere a importação terminar e rode de novo.
+   - Para voltar às imagens originais: rode ferramentas/gerar_fichas.gd.
+
+4) JOGAR:
+   - Abra cenas/campanha.tscn e aperte F6.
+   - (Para virar a cena principal do F5: clique com o botão direito em campanha.tscn > "Definir como Cena Principal".)
+
+COMO JOGAR
+   - Toque numa carta lá em cima e depois numa casa da grade para colocar o herói.
+   - Toque nas bolas amarelas de energia para pegar (ou elas entram sozinhas depois de 6 s).
+   - Dois toques rápidos num herói tiram ele da arena.
+   - Botão 1x/2x muda a velocidade.
+
+TESTES (clique no nó "Arena" na cena e mude no Inspetor):
+   - Nivel Inicial: começa direto num nível (ex.: 5 para ver o chefão).
+   - Nivel Herois: nível da conta dos heróis (1 a 30).
+   - Energia Infinita: para testar sem limite.
+
+AJUSTES
+   - Campanha, ondas, energia, grade:  scripts/arena/config_arena.gd
+   - Personagens: as fichas em dados/personagens/ (Inspetor)
+   - Níveis, preços, moedas, maestria: scripts/sistema/progressao.gd
