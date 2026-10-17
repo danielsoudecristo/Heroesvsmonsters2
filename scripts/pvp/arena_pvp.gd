@@ -2816,8 +2816,6 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 			sub += " · você venceu de Heroes e de Monsters!" if int(serie.get("pontos_dele", 0)) == 0 else " · você venceu o desempate!"
 		elif vl == "":
 			sub += " · ninguém ganhou troféu"
-		if sem_trofeus:
-			sub += " · sem troféus: vocês estão na mesma internet (mesmo Wi-Fi)"
 	if rede.get("wo", false) and vl == lado_local:
 		sub += " · %s saiu: vitória por W.O." % adversario
 	f.subtitulo = sub
