@@ -214,8 +214,10 @@ func _ready() -> void:
 	if campeonato:
 		modo = "normal"
 		bot_nivel = Campeonato.BOT_NIVEL
-	elif modo == "normal" and Perfil.pvp_sala.is_empty():
-		_iniciar_serie_bot()
+	if Perfil.pvp_sala.is_empty() and not campeonato and adversario == "":
+		adversario = P.nome_adversario()              # contra o bot aparece sempre um NOME de jogador (nunca "bot")
+	if not campeonato and modo == "normal" and Perfil.pvp_sala.is_empty():
+		_iniciar_serie_bot()                          # (o mesmo nome a série toda)
 	semente = randi()
 	if not Perfil.pvp_sala.is_empty():
 		_preparar_online(Perfil.pvp_sala)
@@ -306,7 +308,7 @@ func comecar() -> void:
 	intervalo = 0.0
 	cartas_usadas = {}
 	_t_partida = 0.0
-	Conta.estou(_atividade(), ("contra " + adversario) if adversario != "" else "contra o bot (nível %d)" % bot_nivel)
+	Conta.estou(_atividade(), ("contra " + adversario) if online() else "contra o bot %s (nível %d)" % [adversario, bot_nivel])   # (só o painel vê)
 	if modo == "cerco":
 		rodada = 1
 		defensor = str(P.MODO_CERCO.primeiro_defende)
@@ -317,7 +319,7 @@ func comecar() -> void:
 	if modo == "cerco":
 		_banner_rodada()
 		return
-	var contra := (" · Contra %s" % adversario) if adversario != "" else " · Adversário nível %d (%s)" % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
+	var contra := " · Contra %s" % (adversario if adversario != "" else "o adversário")
 	if online():
 		contra = (" · Duelo contra %s" if rede.get("amistoso", false) else " · Você contra %s (online)") % adversario
 		if rede.get("amistoso", false) and _texto_aposta(rede.get("aposta_moedas", 0), rede.get("aposta_trofeus", 0)) != "":
@@ -2877,8 +2879,6 @@ func _encerrar(v: String) -> void:
 	if modo == "cerco":
 		painel_titulo = ("CERCO: " + painel_titulo) if not empate else "CERCO: EMPATE"
 		painel_texto = "%s\n+%d moedas" % [_resumo_cerco(), ganho]
-	if adversario == "" and bot_nivel != nivel_antes:
-		painel_texto += ("\nSeus próximos adversários ficaram mais fortes: nível %d (%s)!" if bot_nivel > nivel_antes else "\nSeus próximos adversários: nível %d (%s).") % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
 	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
 	if venceu:
 		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
@@ -2972,8 +2972,6 @@ func _fim_serie_bot(venceu_serie: bool, ganho: int) -> void:
 	if venceu_serie:
 		painel_texto += "\n" + TXT_TROFEU_BOT
 		_premio_trofeus_bot(nivel_antes)
-	if adversario == "" and P.dificuldade_bot(bot_nivel) != P.dificuldade_bot(nivel_antes):
-		painel_texto += ("\nPróximo adversário: %s!" if bot_nivel > nivel_antes else "\nPróximo adversário: %s.") % P.nome_nivel_bot(bot_nivel)
 	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
 	if venceu_serie:
 		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
@@ -3016,9 +3014,9 @@ func _premio_trofeus_bot(nivel: int) -> void:
 		hoje = g[1]
 	if linha == "":
 		if ganho > 0:
-			linha = "+%d troféus (%s) · hoje: %d/%d do bot" % [ganho, P.nome_nivel_bot(nivel), hoje, limite]
+			linha = "+%d troféus" % ganho
 		elif hoje >= limite:
-			linha = "Troféus do bot de hoje: %d/%d (limite). Jogue online para ganhar mais!" % [hoje, limite]
+			linha = "Você já ganhou o máximo de troféus de hoje. Volte amanhã!"
 	painel_texto = painel_texto.replace("\n" + TXT_TROFEU_BOT, ("\n" + linha) if linha != "" else "")
 	painel.queue_redraw()
 
@@ -3060,7 +3058,7 @@ func _jogar_de_novo() -> void:
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://cenas/pvp.tscn")
 		return
-	adversario = ""                                     # na revanche é o bot de verdade (com o nível dele)
+	adversario = P.nome_adversario()                   # revanche: outro "jogador"
 	_fechar_painel()
 	escolhendo = true                                   # escolhe as cartas de novo antes da nova partida
 	selecao.abrir(cartas_todas)
