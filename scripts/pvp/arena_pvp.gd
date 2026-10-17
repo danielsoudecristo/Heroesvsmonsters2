@@ -2869,6 +2869,9 @@ func _encerrar(v: String) -> void:
 	if modo == "cerco":
 		painel_titulo = ("CERCO: " + painel_titulo) if not empate else "CERCO: EMPATE"
 		painel_texto = "%s\n+%d moedas" % [_resumo_cerco(), ganho]
+	if venceu and modo == "normal":                      # TROFÉUS CONTRA O BOT (o texto chega quando o servidor responder)
+		painel_texto += "\n" + TXT_TROFEU_BOT
+		_premio_trofeus_bot(nivel_antes)
 	if adversario == "" and bot_nivel != nivel_antes:
 		painel_texto += ("\nSeus próximos adversários ficaram mais fortes: nível %d (%s)!" if bot_nivel > nivel_antes else "\nSeus próximos adversários: nível %d (%s).") % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
 	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
@@ -2876,6 +2879,39 @@ func _encerrar(v: String) -> void:
 		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
 	elif not empate:
 		Sons.tocar("Castelo/som/caiu", 1.0)
+
+const TXT_TROFEU_BOT := "Somando os troféus..."
+
+## Venceu o bot na Batalha: troféus pela dificuldade dele, até o limite do dia (ConfigPvp.TROFEUS_BOT).
+## Com conta o servidor confere e soma (34_trofeus_bot.sql); convidado soma no aparelho.
+func _premio_trofeus_bot(nivel: int) -> void:
+	var ganho := 0
+	var hoje := 0
+	var limite := int(P.TROFEUS_BOT.dia)
+	var linha := ""
+	if Perfil.com_conta() and Conta.logado():
+		var r: Dictionary = await Conta.chamar("trofeus_contra_bot", {"p_nivel": nivel})
+		if not is_inside_tree():
+			return
+		if r.ok and r.dados is Dictionary:
+			Perfil.de_servidor(r.dados)
+			Conta.mudou.emit()
+			ganho = int(r.dados.get("ganho_bot", 0))
+			hoje = int(r.dados.get("hoje_bot", 0))
+			limite = int(r.dados.get("limite_bot", limite))
+		else:
+			linha = "(Sem internet: os troféus não foram somados.)"
+	else:
+		var g: Array = Perfil.ganhar_trofeus_bot(P.trofeus_bot(nivel), limite)
+		ganho = g[0]
+		hoje = g[1]
+	if linha == "":
+		if ganho > 0:
+			linha = "+%d troféus (%s) · hoje: %d/%d do bot" % [ganho, P.nome_nivel_bot(nivel), hoje, limite]
+		elif hoje >= limite:
+			linha = "Troféus do bot de hoje: %d/%d (limite). Jogue online para ganhar mais!" % [hoje, limite]
+	painel_texto = painel_texto.replace("\n" + TXT_TROFEU_BOT, ("\n" + linha) if linha != "" else "")
+	painel.queue_redraw()
 
 ## Fim de uma luta do CAMPEONATO: vence quem derrubou o castelo (os dois caindo juntos, coisa rara, conta como derrota).
 ## Não mexe no nível do bot do PvP normal. Prêmio em moedas por fase vencida.

@@ -43,6 +43,18 @@ const SOL := {"cada_min": 5.0, "cada_max": 8.0, "valor": 25}   ## energia que ca
 const VIDA_CASTELO := 100.0
 const MOEDAS := {"vitoria": 30, "derrota": 10, "empate": 15}    ## contra o bot (no online também valem troféus; "empate" não acontece mais)
 const BUSCA_ESPERA := 10.0                         ## segundos procurando adversário antes de cair no bot
+## TROFÉUS CONTRA O BOT (só na Batalha; derrota não tira). Com conta quem manda é o servidor
+## (supabase/34_trofeus_bot.sql, com os MESMOS números); convidado soma no aparelho.
+const TROFEUS_BOT := {"facil": 5, "medio": 10, "dificil": 15, "hardcore": 20, "dia": 100}
+
+static func trofeus_bot(nivel: int) -> int:
+	if nivel <= 4:
+		return int(TROFEUS_BOT.facil)
+	if nivel <= 8:
+		return int(TROFEUS_BOT.medio)
+	if nivel <= 12:
+		return int(TROFEUS_BOT.dificil)
+	return int(TROFEUS_BOT.hardcore)
 
 # ---------------------------------------------------------------- CERCO (em todos os modos)
 ## Quem ataca de LONGE (e o Sentinela/Titã) para no 2º quadrado antes do castelo inimigo e ataca o castelo.
