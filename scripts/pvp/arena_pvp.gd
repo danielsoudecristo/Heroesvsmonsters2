@@ -88,6 +88,7 @@ var sol_t := 2.0
 var bot_t := 4.0
 var bot_nivel := 1
 var campeonato := false                     # esta partida é uma luta do Campeonato (scripts/sistema/campeonato.gd)
+var serie_bot := false                      # Batalha contra o BOT em SÉRIE (Perfil.serie_bot), igual à de pessoa real
 var bot_estilo := ""                        # atacante / defensor / economista (sorteado por partida)
 var bot_nivel_tropa := 1                    # nível das tropas do bot (perto da média dos seus)
 var bot_horda := 0                          # tropas da horda que ainda vão sair
@@ -213,6 +214,8 @@ func _ready() -> void:
 	if campeonato:
 		modo = "normal"
 		bot_nivel = Campeonato.BOT_NIVEL
+	elif modo == "normal" and Perfil.pvp_sala.is_empty():
+		_iniciar_serie_bot()
 	semente = randi()
 	if not Perfil.pvp_sala.is_empty():
 		_preparar_online(Perfil.pvp_sala)
@@ -321,6 +324,8 @@ func comecar() -> void:
 			contra += "\nValendo " + _texto_aposta(rede.get("aposta_moedas", 0), rede.get("aposta_trofeus", 0))
 		if rede.get("em_serie", false):                  # SÉRIE: troféu só para quem vencer de Heroes E de Monsters
 			contra += "\n" + _texto_serie()
+	elif serie_bot:
+		contra += "\n" + _texto_serie_bot()
 	mostrar_banner("PREPARE SUA ARENA\nColoque suas tropas e pegue a energia do céu%s" % contra, 4.5)
 
 # =================================================================== CENA E VISTA
@@ -2850,11 +2855,14 @@ func _encerrar(v: String) -> void:
 	if campeonato:
 		_encerrar_campeonato(venceu, empate, minha, deles)
 		return
-	# moedas (contra o bot não vale troféu)
+	# moedas (a cada partida; os troféus da série contra o bot saem no fim da série)
 	var tab: Dictionary = P.MODO_CERCO.moedas if modo == "cerco" else P.MOEDAS
 	var base: int = tab.vitoria if venceu else (tab.empate if empate else tab.derrota)
 	var g: Dictionary = Perfil.ganhar_moedas(base, lado_local)    # +50% no lado em alta; +150 se jogou os dois lados hoje
 	var ganho: int = g.ganho + g.duplo
+	if serie_bot:
+		_fim_partida_serie_bot(venceu, ganho, minha, deles)
+		return
 	# BOT_DIFICULDADE: vitória = bot mais difícil na próxima; derrota = mais fácil
 	var nivel_antes := bot_nivel
 	if not empate and modo != "cerco":                  # (o Cerco não mexe no nível do bot)
@@ -2869,9 +2877,6 @@ func _encerrar(v: String) -> void:
 	if modo == "cerco":
 		painel_titulo = ("CERCO: " + painel_titulo) if not empate else "CERCO: EMPATE"
 		painel_texto = "%s\n+%d moedas" % [_resumo_cerco(), ganho]
-	if venceu and modo == "normal":                      # TROFÉUS CONTRA O BOT (o texto chega quando o servidor responder)
-		painel_texto += "\n" + TXT_TROFEU_BOT
-		_premio_trofeus_bot(nivel_antes)
 	if adversario == "" and bot_nivel != nivel_antes:
 		painel_texto += ("\nSeus próximos adversários ficaram mais fortes: nível %d (%s)!" if bot_nivel > nivel_antes else "\nSeus próximos adversários: nível %d (%s).") % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
 	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
@@ -2881,6 +2886,110 @@ func _encerrar(v: String) -> void:
 		Sons.tocar("Castelo/som/caiu", 1.0)
 
 const TXT_TROFEU_BOT := "Somando os troféus..."
+
+# =================================================================== SÉRIE CONTRA O BOT
+## Igual à série online (28_serie_pvp.sql): partida 1 no seu lado, partida 2 com os lados TROCADOS e, se ficar
+## 1 x 1, a partida 3 de desempate com o lado sorteado. O bot é o MESMO a série toda (nível e nome).
+## Fim da série: troféus para quem venceu (pela dificuldade do bot) e a próxima dificuldade:
+## venceu = sobe uma (Fácil -> Médio -> Difícil -> HardCore); perdeu = volta uma.
+func _iniciar_serie_bot() -> void:
+	serie_bot = true
+	var s: Dictionary = Perfil.serie_bot
+	if s.get("continua", false):                         # partida 2 ou 3 da mesma série
+		s["continua"] = false
+		bot_nivel = int(s.nivel)
+		adversario = str(s.adversario)
+		return
+	Perfil.serie_bot = {"jogo": 1, "meus": 0, "dele": 0, "nivel": bot_nivel, "lado_original": lado_local,
+		"adversario": adversario, "continua": false}
+
+func _texto_serie_bot() -> String:
+	var s: Dictionary = Perfil.serie_bot
+	var j := int(s.get("jogo", 1))
+	var qual := "Partida %d de 2" % j if j <= 2 else "DESEMPATE (partida 3)"
+	var nome := adversario if adversario != "" else "Adversário"
+	return "%s · Você %d x %d %s · Vença de Heroes E de Monsters" % [qual, int(s.get("meus", 0)), int(s.get("dele", 0)), nome]
+
+func _fim_partida_serie_bot(venceu: bool, ganho: int, minha: float, deles: float) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	var jogo := int(s.jogo)
+	if venceu:
+		s["meus"] = int(s.meus) + 1
+	else:
+		s["dele"] = int(s.dele) + 1
+	_registrar_cartas(venceu)
+	Conta.registrar("pvp_bot", {"lado": lado_local, "venceu": venceu, "empate": false, "bot_nivel": bot_nivel,
+		"castelo": ceili(minha), "castelo_inimigo": ceili(deles), "modo": modo, "serie_jogo": jogo})
+	var acabou := jogo >= 3 or (jogo == 2 and (int(s.meus) == 2 or int(s.dele) == 2))
+	if acabou:
+		_fim_serie_bot(int(s.meus) > int(s.dele), ganho)
+		return
+	s["jogo"] = jogo + 1
+	var proximo := ("monsters" if lado_local == "heroes" else "heroes") if jogo == 1 else ("heroes" if randf() < 0.5 else "monsters")
+	if venceu:
+		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
+	else:
+		Sons.tocar("Castelo/som/caiu", 1.0)
+	var tela = preload("res://scripts/pvp/serie_intervalo.gd").new()
+	tela.f_titulo = f_titulo
+	tela.f_texto = f_texto
+	tela.bot = true
+	tela.venci_partida = venceu
+	tela.jogo_que_acabou = jogo
+	tela.meus_pontos = int(s.meus)
+	tela.pontos_dele = int(s.dele)
+	tela.nome_dele = adversario if adversario != "" else "Adversário"
+	tela.proxima = {"jogo": jogo + 1}
+	tela.proximo_lado = proximo
+	tela.ao_entrar = _proxima_partida_serie_bot
+	tela.ao_sair = _ir_menu                              # sair no intervalo = perde a série
+	painel.visible = false
+	ui.visible = false
+	camada_painel.add_child(tela)
+
+## Entra na próxima partida da série (a cena recarrega com o outro lado).
+func _proxima_partida_serie_bot(lado: String) -> void:
+	Perfil.serie_bot["continua"] = true
+	Perfil.lado = lado
+	Perfil.pvp_adversario = adversario
+	Perfil.pvp_modo = "normal"
+	Perfil.pvp_sala = {}
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+
+## Acabou a série: volta o seu lado, troféus (se venceu) e a dificuldade do próximo bot.
+func _fim_serie_bot(venceu_serie: bool, ganho: int) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	var nivel_antes := int(s.nivel)
+	_fechar_serie_bot(venceu_serie)
+	var placar := "Série %d x %d" % [int(s.meus), int(s.dele)]
+	if venceu_serie:
+		placar += " · você venceu de Heroes e de Monsters!" if int(s.dele) == 0 else " · você venceu o desempate!"
+	else:
+		placar += " · %s venceu a série" % (adversario if adversario != "" else "o adversário")
+	painel_titulo = "VENCEU A SÉRIE!" if venceu_serie else "PERDEU A SÉRIE"
+	painel_texto = "%s\n+%d moedas" % [placar, ganho]
+	if venceu_serie:
+		painel_texto += "\n" + TXT_TROFEU_BOT
+		_premio_trofeus_bot(nivel_antes)
+	if adversario == "" and P.dificuldade_bot(bot_nivel) != P.dificuldade_bot(nivel_antes):
+		painel_texto += ("\nPróximo adversário: %s!" if bot_nivel > nivel_antes else "\nPróximo adversário: %s.") % P.nome_nivel_bot(bot_nivel)
+	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
+	if venceu_serie:
+		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
+	else:
+		Sons.tocar("Castelo/som/caiu", 1.0)
+
+## Fecha a série: o seu lado de antes volta e o próximo bot sobe (venceu) ou desce (perdeu) uma dificuldade.
+func _fechar_serie_bot(venceu_serie: bool) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	if s.is_empty():
+		return
+	bot_nivel = P.proximo_nivel_bot(int(s.nivel), venceu_serie)
+	Perfil.bot_nivel = bot_nivel
+	Perfil.lado = str(s.get("lado_original", Perfil.lado))
+	Perfil.serie_bot = {}
+	Perfil.salvar()
 
 ## Venceu o bot na Batalha: troféus pela dificuldade dele, até o limite do dia (ConfigPvp.TROFEUS_BOT).
 ## Com conta o servidor confere e soma (34_trofeus_bot.sql); convidado soma no aparelho.
@@ -2944,6 +3053,13 @@ func _ir_campeonato() -> void:
 	get_tree().change_scene_to_file("res://cenas/campeonato.tscn")
 
 func _jogar_de_novo() -> void:
+	if serie_bot:                                       # nova série (a cena recarrega no seu lado de sempre)
+		Perfil.serie_bot = {}
+		Perfil.pvp_adversario = ""
+		Perfil.pvp_modo = "normal"
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+		return
 	adversario = ""                                     # na revanche é o bot de verdade (com o nível dele)
 	_fechar_painel()
 	escolhendo = true                                   # escolhe as cartas de novo antes da nova partida
@@ -2957,6 +3073,8 @@ func _ir_menu() -> void:
 			Campeonato.desistiu()
 		_ir_campeonato()
 		return
+	if serie_bot and not Perfil.serie_bot.is_empty():  # saiu no meio da série contra o bot = perdeu a série
+		_fechar_serie_bot(false)
 	Conta.estou("menu")
 	get_tree().paused = false
 	Perfil.pvp_adversario = ""

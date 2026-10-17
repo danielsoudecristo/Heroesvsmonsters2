@@ -139,6 +139,25 @@ const ESTILOS := {
 	"defensor":   {"nome": "Defensor",   "geradores": 0,  "reage": 1.2, "horda_energia": 1.3, "horda_tamanho": 0},
 	"economista": {"nome": "Economista", "geradores": 1,  "reage": 1.0, "horda_energia": 1.15, "horda_tamanho": 1},
 }
+## SÉRIE CONTRA O BOT (igual à de pessoa real): venceu a série = o próximo bot é da dificuldade SEGUINTE
+## (Fácil -> Médio -> Difícil -> HardCore; no HardCore sobe +1 até o máximo); perdeu = volta UMA dificuldade.
+const NIVEL_INICIO_DIFICULDADE := [1, 5, 9, 13]          ## primeiro nível de Fácil, Médio, Difícil e HardCore
+
+static func dificuldade_bot(n: int) -> int:
+	if n <= 4:
+		return 0
+	if n <= 8:
+		return 1
+	if n <= 12:
+		return 2
+	return 3
+
+static func proximo_nivel_bot(n: int, venceu_serie: bool) -> int:
+	var d := dificuldade_bot(n)
+	if venceu_serie:
+		return mini(n + 1, int(BOT.maximo)) if d == 3 else int(NIVEL_INICIO_DIFICULDADE[d + 1])
+	return int(NIVEL_INICIO_DIFICULDADE[maxi(0, d - 1)])
+
 ## Nome da dificuldade do bot pelo nível (aparece na partida).
 static func nome_nivel_bot(n: int) -> String:
 	if n <= 4:

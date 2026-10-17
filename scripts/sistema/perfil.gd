@@ -51,6 +51,9 @@ static var recordes := {}                ## campanha POR LADO: {"heroes"|"monste
 static var pvp_adversario := ""          ## nome do adversário da busca (só nesta partida)
 static var pvp_modo := "normal"          ## PvP: "normal" ou "cerco" (só para a próxima partida)
 static var pvp_sala := {}                ## PvP ONLINE: a sala que o servidor achou (vazio = contra o bot)
+## SÉRIE CONTRA O BOT (Batalha): {jogo, meus, dele, nivel, lado_original, adversario, continua}. Vazio = sem série.
+## Só na memória: vive entre uma partida e a próxima da mesma série (a cena do PvP recarrega).
+static var serie_bot := {}
 static var tutorial_menu := false        ## já viu o tutorial do menu
 static var tutorial_jogo := false        ## já fez o tutorial da primeira batalha
 static var convite_visto := false        ## já abriu "Convide amigos" (tira a etiqueta NOVO)
