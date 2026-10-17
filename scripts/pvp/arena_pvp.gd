@@ -2784,7 +2784,7 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 	var amistoso: bool = rede.get("amistoso", false)
 	var am: int = rede.get("aposta_moedas", 0)
 	var at: int = rede.get("aposta_trofeus", 0)
-	var sem_trofeus: bool = serie.get("sem_trofeus", false) == true   # ANTI-FARM (32_anti_farm.sql): não pagou nada
+	var sem_trofeus: bool = serie.get("sem_trofeus", false) == true   # MESMA INTERNET (35_mesmo_ip.sql): não pagou nada
 	var deltas := {}
 	for j in r.dados:
 		var lado_j := str(j.get("lado", ""))
@@ -2817,7 +2817,7 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 		elif vl == "":
 			sub += " · ninguém ganhou troféu"
 		if sem_trofeus:
-			sub += " · sem troféus: vocês já jogaram 2 séries valendo hoje"
+			sub += " · sem troféus: vocês estão na mesma internet (mesmo Wi-Fi)"
 	if rede.get("wo", false) and vl == lado_local:
 		sub += " · %s saiu: vitória por W.O." % adversario
 	f.subtitulo = sub
