@@ -7,12 +7,14 @@
 -- 1) Quem joga a Batalha online tem o IP da internet anotado (EMBARALHADO: um código md5 que não volta a ser o IP;
 --    só serve para comparar se dois são iguais). O IP é o da rede (o roteador do Wi-Fi), não o do celular:
 --    dois celulares diferentes no mesmo Wi-Fi têm o MESMO IP.
--- 2) Se os dois jogadores de uma série estiverem na mesma rede em qualquer partida da série, a série acaba
---    SEM troféus e SEM moedas (sem_trofeus = true). Eles jogam normal, só não ganham nada um do outro.
--- 3) SEM LIMITE de séries contra a mesma pessoa: revanche à vontade (tira o limite de 2 por dia do 32_anti_farm.sql).
+-- 2) Dois jogadores na MESMA REDE (em qualquer partida da série) valem troféu em até 2 séries a cada 24 horas.
+--    Da 3ª em diante a série acaba SEM troféus e SEM moedas (sem_trofeus = true). Eles continuam jogando normal.
+--    (O jogo não explica o motivo, para ninguém aprender a trocar para o 4G.)
+-- 3) Em redes DIFERENTES não tem limite: revanche à vontade (tira o limite de 2 por dia do 32_anti_farm.sql).
 -- =====================================================================
 
 alter table public.series_pvp add column if not exists sem_trofeus boolean not null default false;
+alter table public.series_pvp add column if not exists mesma_rede boolean not null default false;
 
 create table if not exists public.ip_recente (
   jogador uuid primary key references public.perfis(id) on delete cascade,
@@ -55,7 +57,16 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public._meu_ip(), public._anotar_ip(), public._mesma_rede(uuid, uuid) from public, anon, authenticated;
 
--- (igual ao 28: série de 2 partidas + desempate; SEM limite por dia; mesma rede = sem troféus)
+-- quantas séries NA MESMA REDE esses dois já terminaram valendo troféu nas últimas 24 h
+create or replace function public._series_mesma_rede_hoje(p1 uuid, p2 uuid) returns int
+language sql stable security definer set search_path = public as $$
+  select count(*)::int from series_pvp
+   where status = 'fim' and mesma_rede and not sem_trofeus and criada_em > now() - interval '24 hours'
+     and ((a = p1 and b = p2) or (a = p2 and b = p1));
+$$;
+revoke all on function public._series_mesma_rede_hoje(uuid, uuid) from public, anon, authenticated;
+
+-- (igual ao 28: série de 2 partidas + desempate; mesma rede = até 2 séries valendo por 24 h; redes diferentes = sem limite)
 create or replace function public._serie_registrar(s public.partidas_pvp, v text, wo boolean) returns void
 language plpgsql security definer set search_path = public as $$
 declare se public.series_pvp; quem uuid; acabou boolean := false; lado_a text; lado_b text;
@@ -67,7 +78,7 @@ begin
   end if;
   select * into se from series_pvp where id = s.serie for update;
   if se.status = 'fim' or s.jogo <> se.jogo then return; end if;
-  if _mesma_rede(se.a, se.b) then se.sem_trofeus := true; end if;   -- MESMA INTERNET: a série não vale nada
+  if _mesma_rede(se.a, se.b) then se.mesma_rede := true; end if;     -- MESMA INTERNET em alguma partida da série
   quem := case v when 'heroes' then s.heroes when 'monsters' then s.monsters else null end;
   if quem = se.a then se.pontos_a := se.pontos_a + 1; elsif quem = se.b then se.pontos_b := se.pontos_b + 1; end if;
 
@@ -90,6 +101,9 @@ begin
 
   if acabou then
     se.status := 'fim';
+    if se.mesma_rede and _series_mesma_rede_hoje(se.a, se.b) >= 2 then
+      se.sem_trofeus := true;                               -- 3ª série na mesma rede em 24 h: não vale nada
+    end if;
     if not se.sem_trofeus then
       lado_a := case when s.heroes = se.a then 'heroes' else 'monsters' end;   -- (o lado de cada um na última partida)
       lado_b := case when lado_a = 'heroes' then 'monsters' else 'heroes' end;
@@ -103,7 +117,7 @@ begin
     end if;
   end if;
   update series_pvp set pontos_a = se.pontos_a, pontos_b = se.pontos_b, jogo = se.jogo, status = se.status,
-                        vencedor = se.vencedor, sem_trofeus = se.sem_trofeus where id = se.id;
+                        vencedor = se.vencedor, sem_trofeus = se.sem_trofeus, mesma_rede = se.mesma_rede where id = se.id;
   if not acabou then
     perform _serie_nova_partida(se, s);
   end if;
