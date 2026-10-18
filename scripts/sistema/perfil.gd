@@ -54,6 +54,8 @@ static var pvp_sala := {}                ## PvP ONLINE: a sala que o servidor ac
 ## SÉRIE CONTRA O BOT (Batalha): {jogo, meus, dele, nivel, lado_original, adversario, continua}. Vazio = sem série.
 ## Só na memória: vive entre uma partida e a próxima da mesma série (a cena do PvP recarrega).
 static var serie_bot := {}
+## REPLAY para assistir (36_replays.sql): a "receita" da partida + "lado_ver". Vazio = partida normal.
+static var pvp_replay := {}
 static var tutorial_menu := false        ## já viu o tutorial do menu
 static var tutorial_jogo := false        ## já fez o tutorial da primeira batalha
 static var convite_visto := false        ## já abriu "Convide amigos" (tira a etiqueta NOVO)

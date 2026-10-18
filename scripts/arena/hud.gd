@@ -79,8 +79,8 @@ func _input(ev: InputEvent) -> void:
 ## Devolve true se o toque foi no HUD (aí a arena não usa).
 func toque(pos: Vector2) -> bool:
 	# janelas de pausa/sair abertas (ou a tela de derrota): deixa os botões da janela receberem o toque
-	if not visible or arena.get("painel_menu_visivel") == true:
-		return false
+	if not visible or arena.get("painel_menu_visivel") == true or arena.get("assistindo") == true:
+		return false                                  # (REPLAY: quem cuida dos toques é a arena)
 	var painel_pvp: Variant = arena.get("painel")
 	if painel_pvp is Control and (painel_pvp as Control).visible:
 		return false

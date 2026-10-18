@@ -189,7 +189,11 @@ func _ret_enviar() -> Rect2:
 
 func _rets() -> Dictionary:
 	return {"menu": Rect2(18, 14, 128, 50), "heroes": _ret_carta("heroes"), "monsters": _ret_carta("monsters"),
-		"bt_heroes": _ret_botao("heroes"), "bt_monsters": _ret_botao("monsters"), "enviar": _ret_enviar()}
+		"bt_heroes": _ret_botao("heroes"), "bt_monsters": _ret_botao("monsters"), "enviar": _ret_enviar(),
+		"replays": RET_REPLAYS}
+
+## Botão REPLAYS (36_replays.sql): as batalhas suas e dos amigos das últimas 24 h.
+const RET_REPLAYS := Rect2(1280 - 18 - 170, 14, 170, 50)
 
 # ================================================================== QUEM ESTÁ ENTRANDO
 func _do_lado(l: String) -> Array:
@@ -443,7 +447,7 @@ func _ir_arvore() -> void:
 	Perfil.pvp_sala = {}
 	get_tree().change_scene_to_file("res://cenas/campeonato.tscn")
 
-func _sair() -> void:
+func _sair(destino := "res://cenas/intro.tscn") -> void:
 	if _saindo:
 		return
 	_saindo = true
@@ -453,7 +457,7 @@ func _sair() -> void:
 	elif online and modo != "campeonato" and lado != "":
 		Conta.chamar("sair_da_fila_modo", {"p_modo": _modo_srv()})
 	Conta.estou("menu")
-	get_tree().change_scene_to_file("res://cenas/intro.tscn")
+	get_tree().change_scene_to_file(destino)
 
 # ================================================================== CHAT
 func _sistema(txt: String, l := "") -> void:
@@ -619,6 +623,9 @@ func _tocar(b: String) -> void:
 			_escolher("monsters")
 		"enviar":
 			_enviar()
+		"replays":
+			if _achou_t < 0.0:
+				_sair("res://cenas/replays.tscn")
 
 func _unhandled_key_input(ev: InputEvent) -> void:
 	if ev.is_action_pressed("ui_cancel"):
@@ -686,6 +693,7 @@ func _degrade_lados() -> void:
 func _topo(k: float) -> void:
 	var y := -60.0 * (1.0 - k)
 	_botao(Rect2(18, 14 + y, 128, 50), "← MENU", Color("4a5fae"), _apertado == "menu")
+	_botao(Rect2(RET_REPLAYS.position + Vector2(0, y), RET_REPLAYS.size), "▶ REPLAYS", Color("2fa84f"), _apertado == "replays")
 	var t: String = TITULO[modo]
 	var w := f_titulo.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 40).x + 150
 	var r := Rect2(PALCO.x / 2.0 - w / 2.0, 10 + y, w, 62)

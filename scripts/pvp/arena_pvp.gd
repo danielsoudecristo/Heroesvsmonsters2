@@ -112,6 +112,13 @@ var rede := {}                              # vazio = contra o bot. Ver _prepara
 var canal: RedePvp
 var fila_acoes: Array = []                  # ações (minhas e do adversário) esperando o passo delas
 var seq_acao := 0
+# ---------------------------------------------------------------- REPLAY (36_replays.sql) — só assistir, apaga em 24 h
+var replay := {}                            ## assistindo: a "receita" (semente + jogadas). Vazio = jogando de verdade
+var assistindo := false                     ## (o HUD lê: no replay os toques são da arena)
+var replay_acoes: Array = []                ## online: as jogadas que aconteceram (dos dois lados), para o replay
+var replay_vel := 1                         ## velocidade do replay (1x, 2x, 4x)
+var ultimo_replay := {}                     ## (o que foi mandado para o servidor no fim da partida online)
+var replay_foto := ""                       ## (assistindo) a "foto" do fim: igual à de quem jogou = replay fiel
 var acumulado := 0.0
 
 class Projetil:
@@ -214,11 +221,15 @@ func _ready() -> void:
 	if campeonato:
 		modo = "normal"
 		bot_nivel = Campeonato.BOT_NIVEL
-	if Perfil.pvp_sala.is_empty() and not campeonato and adversario == "":
+	if not Perfil.pvp_replay.is_empty():
+		_preparar_replay(Perfil.pvp_replay)
+		Perfil.pvp_replay = {}
+	if Perfil.pvp_sala.is_empty() and not campeonato and adversario == "" and replay.is_empty():
 		adversario = P.nome_adversario()              # contra o bot aparece sempre um NOME de jogador (nunca "bot")
-	if not campeonato and modo == "normal" and Perfil.pvp_sala.is_empty():
+	if not campeonato and modo == "normal" and Perfil.pvp_sala.is_empty() and replay.is_empty():
 		_iniciar_serie_bot()                          # (o mesmo nome a série toda)
-	semente = randi()
+	if replay.is_empty():
+		semente = randi()                             # (REPLAY: a semente é a da partida gravada)
 	if not Perfil.pvp_sala.is_empty():
 		_preparar_online(Perfil.pvp_sala)
 		Perfil.pvp_sala = {}
@@ -236,6 +247,9 @@ func _ready() -> void:
 	_montar_hud()
 	get_viewport().size_changed.connect(_centralizar)
 	_centralizar()
+	if not replay.is_empty():
+		_iniciar_replay()
+		return
 	escolhendo = true                                 # a partida só começa depois das cartas escolhidas
 	selecao.abrir(cartas_todas)
 
@@ -2257,6 +2271,8 @@ func _aviso_horda(quem: String) -> void:
 
 # =================================================================== REGISTRO (painel)
 func _atividade() -> String:
+	if not replay.is_empty():
+		return "replay"
 	if online():
 		return "cerco" if modo == "cerco" else ("duelo" if rede.get("amistoso", false) else "pvp_online")
 	return "cerco" if modo == "cerco" else "pvp_bot"
@@ -2423,6 +2439,78 @@ func _jogada_bot_defesa(opcoes: Array, est: Dictionary, esperto: bool) -> void:
 	if e:
 		_colocar_bot(e, linha, true)
 
+# =================================================================== REPLAY (36_replays.sql)
+## Fim da partida online: manda a "receita" para o servidor (o primeiro dos dois aparelhos que mandar fica).
+func _guardar_replay(v: String) -> void:
+	if rede.is_empty() or str(rede.get("sala", "")) == "":
+		return
+	var dados := {"v": 1, "semente": semente, "modo": modo, "niveis": rede.get("niveis", {}), "nomes": rede.get("nomes", {}),
+		"amistoso": rede.get("amistoso", false), "passos": passo_n, "vencedor": v, "wo": rede.get("wo", false),
+		"foto": foto_da_partida(), "acoes": replay_acoes}
+	ultimo_replay = dados
+	Conta.chamar("guardar_replay", {"p_sala": rede.sala, "p_dados": dados})   # (sem esperar)
+
+## Abriu um replay: a partida roda como a online (mesma semente, mesmas jogadas), só que ninguém joga.
+func _preparar_replay(d: Dictionary) -> void:
+	replay = d
+	assistindo = true
+	lado_local = str(d.get("lado_ver", "heroes")) if str(d.get("lado_ver", "")) in ["heroes", "monsters"] else "heroes"
+	var o := "monsters" if lado_local == "heroes" else "heroes"
+	semente = int(d.get("semente", 0))
+	modo = "cerco" if str(d.get("modo", "normal")) == "cerco" else "normal"
+	var nomes: Dictionary = d.get("nomes", {}) if d.get("nomes") is Dictionary else {}
+	adversario = str(nomes.get(o, "")) if str(nomes.get(o, "")) != "" else "Adversário"
+	var nv: Dictionary = d.get("niveis", {}) if d.get("niveis") is Dictionary else {}
+	rede = {"sala": "", "lado_outro": o, "recebidos": {}, "enviados": {}, "minhas": [], "esperando_desde": 0, "pediu_em": 0,
+		"saiu": false, "wo": false, "finalizando": false, "conectou": true, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
+		"niveis": {"heroes": nv.get("heroes", {}), "monsters": nv.get("monsters", {})}, "nomes": nomes,
+		"amistoso": d.get("amistoso", false) == true, "replay": true}
+
+func _iniciar_replay() -> void:
+	escolhendo = false
+	comecar()
+	for a in replay.get("acoes", []):
+		if a is Dictionary:
+			var b: Dictionary = a.duplicate()
+			b.passo = int(b.get("passo", 0))
+			b.seq = int(b.get("seq", 0))
+			b.lado = str(b.get("lado", ""))
+			fila_acoes.append(b)
+	var nomes: Dictionary = rede.get("nomes", {})
+	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nToque na tela: velocidade 1x / 2x / 4x" % [
+		str(nomes.get("heroes", "Heroes")), str(nomes.get("monsters", "Monsters"))], 4.0)
+
+func _passo_replay(dt: float) -> void:
+	acumulado = minf(acumulado + dt * replay_vel, 0.25 * replay_vel)
+	var n := 0
+	while acumulado >= PASSO and n < 8 * replay_vel and not fim:
+		_passo_sim(PASSO)
+		acumulado -= PASSO
+		n += 1
+		if not fim and passo_n >= int(replay.get("passos", 0)) + 30:   # (W.O.: a partida parou antes de um castelo cair)
+			_fim_replay(str(replay.get("vencedor", "")))
+
+func _fim_replay(v: String) -> void:
+	if fim and painel.visible:
+		return
+	fim = true
+	vencedor = v
+	replay_foto = foto_da_partida()
+	if replay_foto != str(replay.get("foto", replay_foto)) and replay.get("wo", false) != true:
+		Conta.registrar("replay_diferente", {"passos": passo_n, "esperado": replay.get("passos", 0)})   # (painel: para conferir)
+	var nomes: Dictionary = rede.get("nomes", {})
+	var quem := str(nomes.get(v, "")) if v in ["heroes", "monsters"] else ""
+	painel_titulo = "FIM DO REPLAY"
+	painel_texto = ("%s venceu de %s!" % [quem, "Heroes" if v == "heroes" else "Monsters"]) if quem != "" else "Fim da partida."
+	if replay.get("wo", false) == true:
+		painel_texto += "\n(o outro saiu da partida)"
+	_abrir_painel([["Ver de novo", Color("ffc43a"), _replay_de_novo], ["Voltar", Color("4a5fae"), _ir_menu]])
+
+func _replay_de_novo() -> void:
+	Perfil.pvp_replay = replay
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+
 # =================================================================== ONLINE (lockstep)
 func online() -> bool:
 	return not rede.is_empty()
@@ -2441,6 +2529,8 @@ func _preparar_online(sala: Dictionary) -> void:
 		"esperando_desde": 0, "pediu_em": 0, "saiu": false, "wo": false, "finalizando": false,
 		"conectou": false, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
 		"niveis": {"heroes": nh if nh is Dictionary else {}, "monsters": nm if nm is Dictionary else {}}}
+	rede["nomes"] = {"heroes": str(sala.get("nome_heroes", "")) if sala.get("nome_heroes") != null else "",
+		"monsters": str(sala.get("nome_monsters", "")) if sala.get("nome_monsters") != null else ""}
 	rede["amistoso"] = sala.get("amistoso", false) == true      # DUELO entre amigos: não vale troféu
 	modo = "cerco" if str(sala.get("modo", "normal")) == "cerco" else "normal"   # (19_cerco.sql)
 	rede["aposta_moedas"] = int(sala.get("aposta_moedas", 0)) if sala.get("aposta_moedas") != null else 0
@@ -2608,6 +2698,8 @@ func _aplicar_acoes_do_passo() -> void:
 			return a.lado == "heroes"
 		return a.seq < b.seq)
 	for a in agora:
+		if online() and replay.is_empty():            # REPLAY: guarda tudo o que aconteceu (dos dois lados)
+			replay_acoes.append(a.duplicate())
 		_aplicar_acao(a)
 
 func _aplicar_acao(a: Dictionary) -> void:
@@ -2666,6 +2758,7 @@ func _encerrar_online(v: String, wo := false) -> void:
 	carta_sel = -1
 	rede.wo = wo
 	rede.finalizando = true
+	_guardar_replay(v)
 	var venceu := v == lado_local
 	var empate := v == ""
 	_registrar_cartas(venceu)
@@ -2842,6 +2935,9 @@ func _desistir_online() -> void:
 
 # =================================================================== FIM
 func _encerrar(v: String) -> void:
+	if not replay.is_empty():
+		_fim_replay(v)
+		return
 	if online():
 		_encerrar_online(v)
 		return
@@ -3062,6 +3158,10 @@ func _jogar_de_novo() -> void:
 	selecao.abrir(cartas_todas)
 
 func _ir_menu() -> void:
+	if not replay.is_empty():                          # REPLAY: volta para a lista de replays
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://cenas/replays.tscn")
+		return
 	if not fim and _t_partida > 5.0:                    # saiu no meio da partida
 		Conta.registrar("desistiu", {"modo": _atividade(), "minuto": snappedf(_t_partida / 60.0, 0.1), "rodada": rodada if modo == "cerco" else 0})
 	if campeonato:                                     # saiu da luta do campeonato no meio: conta como derrota
@@ -3077,6 +3177,9 @@ func _ir_menu() -> void:
 	get_tree().change_scene_to_file("res://cenas/intro.tscn")
 
 func _pausar() -> void:
+	if not replay.is_empty():                          # REPLAY: voltar sai
+		_ir_menu()
+		return
 	if fim or painel.visible or escolhendo:
 		return
 	if online():                                       # ONLINE: a partida não para (o outro continua jogando)
@@ -3174,7 +3277,10 @@ func _desenhar_painel() -> void:
 
 # =================================================================== QUADRO (efeitos e desenho)
 func _process(dt: float) -> void:
-	if online() and not fim and not escolhendo:
+	if not replay.is_empty():
+		if not fim:
+			_passo_replay(dt)
+	elif online() and not fim and not escolhendo:
 		_passo_online(dt)
 	for tx in textos:
 		tx.t += dt
@@ -3551,6 +3657,10 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	var pos := C.pos_toque(self, ev)
 	if not pos.is_finite() or fim or (painel and painel.visible):
+		return
+	if not replay.is_empty():                          # REPLAY: tocar na tela troca a velocidade
+		replay_vel = 2 if replay_vel == 1 else (4 if replay_vel == 2 else 1)
+		mostrar_banner("REPLAY · velocidade %dx" % replay_vel, 1.2)
 		return
 	if pegar_energia(pos):
 		return
