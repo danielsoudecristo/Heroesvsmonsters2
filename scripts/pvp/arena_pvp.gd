@@ -299,6 +299,7 @@ func comecar() -> void:
 	recargas = {"heroes": {}, "monsters": {}}
 	vidas = {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 	energias = {"heroes": float(P.ENERGIA_INICIAL), "monsters": float(P.ENERGIA_INICIAL)}
+	_somar_energia_extra()
 	if online():
 		rng.seed = semente                          # a MESMA sorte nos dois aparelhos
 	else:
@@ -2305,6 +2306,7 @@ func _preparar_rodada() -> void:
 	vidas = {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 	energias = {"heroes": float(P.ENERGIA_INICIAL), "monsters": float(P.ENERGIA_INICIAL)}
 	energias[defensor] += float(P.MODO_CERCO.energia_defesa)
+	_somar_energia_extra()
 	if not online():
 		energias[outro] += (bot_nivel - 1) * P.BOT.energia_inicial_por_nivel
 		bot_estilo = "defensor" if defensor == outro else "atacante"
@@ -2443,13 +2445,24 @@ func _jogada_bot_defesa(opcoes: Array, est: Dictionary, esperto: bool) -> void:
 	if e:
 		_colocar_bot(e, linha, true)
 
+## ENERGIA EXTRA do painel (37_painel_admin.sql): a mais (ou a menos) no começo da partida / rodada.
+## Online e replay: o número de cada lado vem da sala (igual nos dois aparelhos). Contra o bot: só o seu.
+func _somar_energia_extra() -> void:
+	for l in ["heroes", "monsters"]:
+		var extra := 0
+		if online():
+			extra = int((rede.get("energia", {}) as Dictionary).get(l, 0))
+		elif l == lado_local and not campeonato:
+			extra = Perfil.energia_extra
+		energias[l] = maxf(50.0, energias[l] + float(extra))
+
 # =================================================================== REPLAY (36_replays.sql)
 ## Fim da partida online: manda a "receita" para o servidor (o primeiro dos dois aparelhos que mandar fica).
 func _guardar_replay(v: String) -> void:
 	if rede.is_empty() or str(rede.get("sala", "")) == "":
 		return
 	var dados := {"v": 1, "semente": semente, "modo": modo, "niveis": rede.get("niveis", {}), "nomes": rede.get("nomes", {}),
-		"amistoso": rede.get("amistoso", false), "passos": passo_n, "vencedor": v, "wo": rede.get("wo", false),
+		"amistoso": rede.get("amistoso", false), "energia": rede.get("energia", {}), "passos": passo_n, "vencedor": v, "wo": rede.get("wo", false),
 		"foto": foto_da_partida(), "acoes": replay_acoes}
 	ultimo_replay = dados
 	Conta.chamar("guardar_replay", {"p_sala": rede.sala, "p_dados": dados})   # (sem esperar)
@@ -2468,7 +2481,8 @@ func _preparar_replay(d: Dictionary) -> void:
 	rede = {"sala": "", "lado_outro": o, "recebidos": {}, "enviados": {}, "minhas": [], "esperando_desde": 0, "pediu_em": 0,
 		"saiu": false, "wo": false, "finalizando": false, "conectou": true, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
 		"niveis": {"heroes": nv.get("heroes", {}), "monsters": nv.get("monsters", {})}, "nomes": nomes,
-		"amistoso": d.get("amistoso", false) == true, "replay": true}
+		"amistoso": d.get("amistoso", false) == true, "replay": true,
+		"energia": d.get("energia", {}) if d.get("energia") is Dictionary else {}}
 
 func _iniciar_replay() -> void:
 	escolhendo = false
@@ -2643,6 +2657,8 @@ func _preparar_online(sala: Dictionary) -> void:
 		"esperando_desde": 0, "pediu_em": 0, "saiu": false, "wo": false, "finalizando": false,
 		"conectou": false, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
 		"niveis": {"heroes": nh if nh is Dictionary else {}, "monsters": nm if nm is Dictionary else {}}}
+	rede["energia"] = {"heroes": int(sala.get("energia_heroes", 0)) if sala.get("energia_heroes") != null else 0,
+		"monsters": int(sala.get("energia_monsters", 0)) if sala.get("energia_monsters") != null else 0}
 	rede["nomes"] = {"heroes": str(sala.get("nome_heroes", "")) if sala.get("nome_heroes") != null else "",
 		"monsters": str(sala.get("nome_monsters", "")) if sala.get("nome_monsters") != null else ""}
 	rede["amistoso"] = sala.get("amistoso", false) == true      # DUELO entre amigos: não vale troféu

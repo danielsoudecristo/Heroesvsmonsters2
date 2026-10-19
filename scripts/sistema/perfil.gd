@@ -42,6 +42,8 @@ static var dia_lados := ""               ## "2026-10-04" (dia de Brasília)
 static var bonus_pago := false
 static var convite := ""                 ## código de convite (com conta)
 static var niveis := {}                  ## nível da conta de cada personagem (com conta)
+static var energia_extra := 0            ## (painel: 37_painel_admin.sql) energia a mais no começo de cada partida (com conta)
+static var banido := false               ## (painel) conta bloqueada para o online
 static var convidado_ok := false         ## já escolheu "Jogar como convidado" (não pergunta de novo)
 static var bot_nivel := 1                ## nível do bot do PvP (sobe quando você ganha dele, desce quando perde)
 static var trofeus_bot_dia := ""         ## CONVIDADO: dia (Brasília) da contagem abaixo
@@ -157,12 +159,16 @@ static func de_servidor(srv: Dictionary) -> void:
 	var l = srv.get("lados_hoje")
 	lados_hoje = l if l is Array else []
 	bonus_pago = bool(srv.get("bonus_duplo_pago", false))
+	if srv.has("energia_extra"):
+		energia_extra = int(srv.get("energia_extra", 0))
 
 ## Saiu da conta: volta para o progresso de convidado deste aparelho.
 static func voltar_convidado() -> void:
 	_com_conta = false
 	niveis = {}
 	convite = ""
+	energia_extra = 0
+	banido = false
 	_ler_arquivo()
 
 # ---------------------------------------------------------------- ligas e bônus

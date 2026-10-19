@@ -386,7 +386,8 @@ func comecar_nivel(n: int, limpar := true) -> void:
 	hud.visible = true
 	if limpar:
 		_limpar_tudo()
-		energia = C.energia_inicial(n) + int(dif.energia_ini)
+		energia = C.energia_inicial(n) + int(dif.energia_ini) + Perfil.energia_extra   # (painel: energia extra)
+		energia = maxi(energia, 50)
 	rajada = 0
 	_trocar_fundo()
 	var inimigos := 0

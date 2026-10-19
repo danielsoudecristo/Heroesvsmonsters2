@@ -467,6 +467,10 @@ func _conectar_perfil() -> void:
 		if r2.ok and r2.dados is Dictionary:
 			srv = r2.dados
 	Perfil.de_servidor(srv)
+	var ra: Dictionary = await chamar("meus_ajustes")           # (37_painel_admin.sql) ajustes do painel
+	if ra.ok and ra.dados is Dictionary:
+		Perfil.energia_extra = int(ra.dados.get("energia_extra", 0))
+		Perfil.banido = ra.dados.get("banido", false) == true
 	var rp: Dictionary = await ler("personagens_jogador?select=personagem,nivel")
 	if rp.ok and rp.dados is Array:
 		var nv := {}
