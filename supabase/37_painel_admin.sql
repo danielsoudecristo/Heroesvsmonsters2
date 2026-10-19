@@ -71,7 +71,7 @@ begin
   atual := case p_campo when 'trofeus' then p.trofeus when 'moedas' then p.moedas else p.energia_extra end;
   novo := case p_modo when 'somar' then atual + p_valor else p_valor end;
   if p_campo = 'energia_extra' then
-    novo := least(greatest(novo, -100), 2000);            -- (nunca deixa a partida começar sem energia nenhuma)
+    novo := least(greatest(novo, -100), 100000);          -- (nunca deixa a partida começar sem energia nenhuma)
   else
     novo := least(greatest(novo, 0), 99999999);
   end if;
