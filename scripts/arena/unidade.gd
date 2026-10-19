@@ -59,7 +59,7 @@ var t_saida := 0.0                        # (PvP) segundos desde que saiu do por
 
 # ---- COMANDOS DO JOGADOR (menu do personagem: scripts/arena/menu_unidade.gd) ----
 var uid := 0                              ## número da tropa na partida (o PvP online manda o comando por ele)
-var ordem := ""                           ## "" normal / "parar" / "andar" / "voltar"
+var ordem := ""                           ## "" normal / "parar" / "andar" / "voltar" / "frente" (PvP: tocou ANDAR)
 var virado := false                       ## andando de costas para o inimigo (voltando): a folha vira
 var pressa := 0.0                         ## PODER AZUL: 0..1 — cada toque acelera os ataques (some devagar)
 var _pressa_t := 99.0                     ## segundos desde o último toque no azul
@@ -588,15 +588,39 @@ func queimar(dur: float, dano_tick: float, de := "esqueletoArqueiro") -> void:
 
 ## LUTA PARA TRÁS (todos os personagens): sem inimigo na frente mas com um ATRÁS no alcance = vira e luta com ele;
 ## quando acaba, vira de volta. Só decide fora de um golpe (não vira no meio do ataque).
+## PvP: a tropa luta na LINHA INTEIRA dela, onde quer que tenha sido colocada — inimigo em qualquer ponto da
+## linha (na frente ou atrás, na mesma arena) = vai até ele e ataca. Ordem de prioridade: quem já está no alcance
+## na frente > no alcance atrás > em qualquer ponto na frente > em qualquer ponto atrás.
+## O jogador tocou ANDAR (ordem "frente"): a decisão é dele — segue para a frente e NUNCA vira para trás.
 var _virada_t := 0.0
 func _decidir_virada(dt: float) -> void:
 	if p.comportamento == "gerador" or _voo_dur > 0.0 or ordem == "voltar" or alvo_x != INF:
+		return
+	if pvp and ordem == "frente":
+		if virado and not _ocupado():
+			_virar(false)
 		return
 	_virada_t -= dt
 	if _virada_t > 0.0 or _ocupado():
 		return
 	_virada_t = 0.25
 	var base := _dir_base()
+	if pvp:
+		var perto_f := _tem_inimigo_para(base)
+		var perto_t := _tem_inimigo_para(-base)
+		if perto_f and arena.no_cerco(self) and perto_t:
+			_virar(true)                                  # atacando o castelo e chegou inimigo nas costas: defende-se primeiro
+		elif perto_f:
+			_virar(false)
+		elif perto_t:
+			_virar(true)
+		elif _mais_perto_na_linha(base) != null:
+			_virar(false)                                 # inimigo lá na frente, na linha: segue para ele
+		elif _mais_perto_na_linha(-base) != null:
+			_virar(true)                                  # inimigo lá atrás, na linha: vira e vai até ele
+		elif virado:
+			_virar(false)
+		return
 	var na_frente := _tem_inimigo_para(base)
 	if na_frente and pvp and arena.no_cerco(self) and _tem_inimigo_para(-base):
 		_virar(true)                                      # atacando o castelo e chegou inimigo nas costas: defende-se primeiro
@@ -636,8 +660,24 @@ func _inimigo_no_sentido(s: float) -> Unidade:
 	virado = antes
 	return a
 
+## PvP: o inimigo mais perto na LINHA INTEIRA para o lado s (na mesma arena), sem mudar para onde ele olha.
+func _mais_perto_na_linha(s: float) -> Unidade:
+	var antes := virado
+	virado = (s != _dir_base())
+	var lista: Array = arena.todos_na_linha(self, 99999.0, 10.0)
+	virado = antes
+	var melhor: Unidade = null
+	var melhor_d := INF
+	for o in lista:
+		var d := absf(o.position.x - position.x)
+		if d < melhor_d:
+			melhor = o
+			melhor_d = d
+	return melhor
+
 ## INIMIGO ATRÁS (ex.: tropa colocada nas costas): quem luta de PERTO já virou para ele, mas se ele não está
 ## colado (fora do golpe) dá uns passos até encostar — nunca fica parado de costas sem fazer nada.
+## PvP: vai até ele em QUALQUER ponto da linha (não só no alcance).
 ## Quem atira de longe não precisa (já atira na linha inteira). Devolve true enquanto está andando até ele.
 func _chegar_no_de_tras(dt: float) -> bool:
 	if not virado or p.comportamento in _DE_LONGE or guarda or ordem == "parar" or _ocupado() or not p.anims.has("andar"):
@@ -645,7 +685,7 @@ func _chegar_no_de_tras(dt: float) -> bool:
 	var contato: float = ConfigArena.CONTATO_MONSTRO if lado == "monsters" else (p.alcance if p.alcance > 0 else 60.0)
 	if arena.alvo_na_frente(self, contato) != null:
 		return false                                       # já está colado: o cérebro bate
-	var e := _inimigo_no_sentido(_dir())
+	var e := _mais_perto_na_linha(_dir()) if pvp else _inimigo_no_sentido(_dir())
 	if e == null:
 		return false
 	if estado != "andar":

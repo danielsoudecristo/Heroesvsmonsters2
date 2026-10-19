@@ -693,7 +693,7 @@ func _comando_sim(u: Unidade, tipo: String) -> void:
 		"parar":
 			u.ordem = "parar"
 		"andar":
-			u.ordem = ""                                 # volta a marchar normalmente
+			u.ordem = "frente"                           # o JOGADOR mandou andar: vai para a frente e não volta para trás
 			u._virar(false)
 		"voltar":
 			u.ordem = "voltar"

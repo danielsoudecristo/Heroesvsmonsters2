@@ -79,7 +79,7 @@ func _lista() -> Array:
 
 func _ordem_ativa() -> String:
 	if arena.get("pvp") == true:
-		return "andar" if u.ordem == "" else u.ordem
+		return "andar" if u.ordem in ["", "frente"] else u.ordem
 	return u.ordem if u.ordem in ["andar", "voltar"] else "parar"
 
 func _process(dt: float) -> void:
