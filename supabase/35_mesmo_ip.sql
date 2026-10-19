@@ -7,8 +7,8 @@
 -- 1) Quem joga a Batalha online tem o IP da internet anotado (EMBARALHADO: um código md5 que não volta a ser o IP;
 --    só serve para comparar se dois são iguais). O IP é o da rede (o roteador do Wi-Fi), não o do celular:
 --    dois celulares diferentes no mesmo Wi-Fi têm o MESMO IP.
--- 2) Dois jogadores na MESMA REDE (em qualquer partida da série) valem troféu em até 2 séries a cada 24 horas.
---    Da 3ª em diante a série acaba SEM troféus e SEM moedas (sem_trofeus = true). Eles continuam jogando normal.
+-- 2) Dois jogadores na MESMA REDE (em qualquer partida da série) NUNCA ganham troféu um do outro:
+--    a série acaba SEM troféus e SEM moedas (sem_trofeus = true). Eles continuam jogando normal, por diversão.
 --    (O jogo não explica o motivo, para ninguém aprender a trocar para o 4G.)
 -- 3) Em redes DIFERENTES não tem limite: revanche à vontade (tira o limite de 2 por dia do 32_anti_farm.sql).
 -- =====================================================================
@@ -66,7 +66,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public._series_mesma_rede_hoje(uuid, uuid) from public, anon, authenticated;
 
--- (igual ao 28: série de 2 partidas + desempate; mesma rede = até 2 séries valendo por 24 h; redes diferentes = sem limite)
+-- (igual ao 28: série de 2 partidas + desempate; mesma rede = não vale troféu; redes diferentes = sem limite)
 create or replace function public._serie_registrar(s public.partidas_pvp, v text, wo boolean) returns void
 language plpgsql security definer set search_path = public as $$
 declare se public.series_pvp; quem uuid; acabou boolean := false; lado_a text; lado_b text;
@@ -101,8 +101,8 @@ begin
 
   if acabou then
     se.status := 'fim';
-    if se.mesma_rede and _series_mesma_rede_hoje(se.a, se.b) >= 2 then
-      se.sem_trofeus := true;                               -- 3ª série na mesma rede em 24 h: não vale nada
+    if se.mesma_rede then
+      se.sem_trofeus := true;                               -- MESMA INTERNET: não vale troféu nem moedas
     end if;
     if not se.sem_trofeus then
       lado_a := case when s.heroes = se.a then 'heroes' else 'monsters' end;   -- (o lado de cada um na última partida)
