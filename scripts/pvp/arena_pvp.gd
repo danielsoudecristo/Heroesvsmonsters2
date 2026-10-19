@@ -119,6 +119,10 @@ var replay_acoes: Array = []                ## online: as jogadas que acontecera
 var replay_vel := 1                         ## velocidade do replay (1x, 2x, 4x)
 var ultimo_replay := {}                     ## (o que foi mandado para o servidor no fim da partida online)
 var replay_foto := ""                       ## (assistindo) a "foto" do fim: igual à de quem jogou = replay fiel
+var replay_alvo := -1                       ## BARRA DO REPLAY: passo para onde está indo (-1 = assistindo normal)
+var replay_arrasto := -1                    ## BARRA DO REPLAY: passo embaixo do dedo enquanto arrasta (-1 = não está arrastando)
+var barra_replay: Control                   ## BARRA DO REPLAY (desenhada por cima do jogo)
+const REPLAY_PASSOS_POR_QUADRO := 600       ## avançando pela barra: quantos passos por quadro (10 s de partida)
 var acumulado := 0.0
 
 class Projetil:
@@ -2468,6 +2472,18 @@ func _preparar_replay(d: Dictionary) -> void:
 
 func _iniciar_replay() -> void:
 	escolhendo = false
+	_recomecar_replay()
+	barra_replay = Control.new()
+	barra_replay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	barra_replay.size = Vector2(C.W, C.H)
+	barra_replay.draw.connect(_desenhar_barra_replay)
+	ui.add_child(barra_replay)
+	var nomes: Dictionary = rede.get("nomes", {})
+	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nArraste a barra para ir a qualquer momento · toque na tela: 1x / 2x / 4x" % [
+		str(nomes.get("heroes", "Heroes")), str(nomes.get("monsters", "Monsters"))], 4.0)
+
+## Volta a partida para o começo (com todas as jogadas guardadas de novo).
+func _recomecar_replay() -> void:
 	comecar()
 	for a in replay.get("acoes", []):
 		if a is Dictionary:
@@ -2476,11 +2492,106 @@ func _iniciar_replay() -> void:
 			b.seq = int(b.get("seq", 0))
 			b.lado = str(b.get("lado", ""))
 			fila_acoes.append(b)
-	var nomes: Dictionary = rede.get("nomes", {})
-	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nToque na tela: velocidade 1x / 2x / 4x" % [
-		str(nomes.get("heroes", "Heroes")), str(nomes.get("monsters", "Monsters"))], 4.0)
+
+func _total_replay() -> int:
+	return maxi(1, int(replay.get("passos", 1)))
+
+## BARRA: ir para o passo "alvo". Para trás = recomeça do zero e corre até lá (a partida é sempre igual);
+## para frente = corre daqui até lá. Correndo, o som fica mudo e a tela mostra "Indo para...".
+func _ir_para_replay(alvo: int) -> void:
+	alvo = clampi(alvo, 0, _total_replay())
+	if alvo >= _total_replay():
+		alvo = _total_replay() + 1                     # (o fim: o castelo cai DENTRO do último passo)
+	if alvo < passo_n or fim:
+		_recomecar_replay()
+	replay_alvo = alvo
+	AudioServer.set_bus_mute(0, true)
+
+func _correr_replay() -> void:
+	var n := 0
+	while passo_n < replay_alvo and not fim and n < REPLAY_PASSOS_POR_QUADRO:
+		_passo_sim(PASSO)
+		n += 1
+	if passo_n >= replay_alvo or fim:
+		replay_alvo = -1
+		acumulado = 0.0
+		AudioServer.set_bus_mute(0, false)
+		textos.clear()
+		explosoes.clear()
+
+func _ret_barra_replay() -> Rect2:
+	return Rect2(270, C.H - 40, C.W - 410, 12)
+
+func _passo_da_barra(x: float) -> int:
+	var r := _ret_barra_replay()
+	return roundi(clampf((x - r.position.x) / r.size.x, 0.0, 1.0) * _total_replay())
+
+func _desenhar_barra_replay() -> void:
+	var b := barra_replay
+	var r := _ret_barra_replay()
+	var total := _total_replay()
+	var agora := replay_arrasto if replay_arrasto >= 0 else (replay_alvo if replay_alvo >= 0 else passo_n)
+	var k := clampf(float(agora) / float(total), 0.0, 1.0)
+	var fundo_r := Rect2(138, C.H - 70, C.W - 144, 66)            # (cobre a faixa de baixo do HUD, que no replay não serve)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.04, 0.1, 0.96)
+	sb.border_color = Color("2fd15a")
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(20)
+	b.draw_style_box(sb, fundo_r)
+	var trilho := StyleBoxFlat.new()
+	trilho.bg_color = Color(1, 1, 1, 0.18)
+	trilho.set_corner_radius_all(6)
+	b.draw_style_box(trilho, r)
+	if k > 0.0:
+		var cheio := StyleBoxFlat.new()
+		cheio.bg_color = Color("2fd15a")
+		cheio.set_corner_radius_all(6)
+		b.draw_style_box(cheio, Rect2(r.position, Vector2(r.size.x * k, r.size.y)))
+	var bola := Vector2(r.position.x + r.size.x * k, r.get_center().y)
+	b.draw_circle(bola, 15 if replay_arrasto >= 0 else 12, Color("120c04"))
+	b.draw_circle(bola, 12 if replay_arrasto >= 0 else 9, Color.WHITE)
+	var txt_t := "%s / %s" % [_mmss(agora / 60.0), _mmss(total / 60.0)]
+	b.draw_string_outline(f_titulo, Vector2(fundo_r.position.x + 18, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(fundo_r.position.x + 18, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	var txt_v := "⏩ indo..." if replay_alvo >= 0 else "%dx" % replay_vel
+	b.draw_string_outline(f_titulo, Vector2(r.end.x + 22, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(r.end.x + 22, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("ffd34d"))
+
+## Toques no replay: arrastar na barra (embaixo) = ir para aquele momento; tocar no resto = velocidade.
+func _toque_replay(ev: InputEvent) -> void:
+	if barra_replay == null:
+		return
+	var apertou: bool = (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and ev.pressed) or (ev is InputEventScreenTouch and ev.pressed)
+	var soltou: bool = (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and not ev.pressed) or (ev is InputEventScreenTouch and not ev.pressed)
+	var moveu: bool = ev is InputEventMouseMotion or ev is InputEventScreenDrag
+	if ev is InputEventMouseButton and ev.device == InputEvent.DEVICE_ID_EMULATION:
+		return                                       # (o toque do celular já chega como ScreenTouch)
+	if not (apertou or soltou or moveu):
+		return
+	var pos: Vector2 = barra_replay.make_input_local(ev).position
+	var area := _ret_barra_replay().grow_individual(130, 34, 130, 40)
+	if apertou:
+		if area.has_point(pos):
+			replay_arrasto = _passo_da_barra(pos.x)
+		elif not (painel and painel.visible) and replay_alvo < 0:
+			replay_vel = 2 if replay_vel == 1 else (4 if replay_vel == 2 else 1)
+			mostrar_banner("REPLAY · velocidade %dx" % replay_vel, 1.2)
+	elif moveu and replay_arrasto >= 0:
+		replay_arrasto = _passo_da_barra(pos.x)
+	elif soltou and replay_arrasto >= 0:
+		var alvo := _passo_da_barra(pos.x)
+		replay_arrasto = -1
+		_ir_para_replay(alvo)
 
 func _passo_replay(dt: float) -> void:
+	if barra_replay:
+		barra_replay.queue_redraw()
+	if replay_arrasto >= 0:
+		return                                       # (arrastando a barra: a partida espera)
+	if replay_alvo >= 0:
+		_correr_replay()
+		return
 	acumulado = minf(acumulado + dt * replay_vel, 0.25 * replay_vel)
 	var n := 0
 	while acumulado >= PASSO and n < 8 * replay_vel and not fim:
@@ -2493,6 +2604,9 @@ func _passo_replay(dt: float) -> void:
 func _fim_replay(v: String) -> void:
 	if fim and painel.visible:
 		return
+	if replay_alvo >= 0:                               # (arrastou a barra até o fim: terminou de correr)
+		replay_alvo = -1
+		AudioServer.set_bus_mute(0, false)
 	fim = true
 	vencedor = v
 	replay_foto = foto_da_partida()
@@ -3159,6 +3273,7 @@ func _jogar_de_novo() -> void:
 
 func _ir_menu() -> void:
 	if not replay.is_empty():                          # REPLAY: volta para a lista de replays
+		AudioServer.set_bus_mute(0, false)
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://cenas/replays.tscn")
 		return
@@ -3278,8 +3393,10 @@ func _desenhar_painel() -> void:
 # =================================================================== QUADRO (efeitos e desenho)
 func _process(dt: float) -> void:
 	if not replay.is_empty():
-		if not fim:
+		if not fim or replay_alvo >= 0 or replay_arrasto >= 0:
 			_passo_replay(dt)
+		elif barra_replay:
+			barra_replay.queue_redraw()
 	elif online() and not fim and not escolhendo:
 		_passo_online(dt)
 	for tx in textos:
@@ -3609,7 +3726,7 @@ func _desenhar_tela() -> void:
 		var e := 1.0 - pow(1.0 - k2, 3.0)
 		var pos: Vector2 = v.de.lerp(alvo, e) - Vector2(0, sin(k2 * PI) * 60.0)
 		hud.icone_energia(d, pos, 18.0 * (1.0 - k2 * 0.3))
-	if online():                                       # ONLINE: tropa que você mandou e ainda vai aparecer (0,5 s)
+	if online() and replay.is_empty():                 # ONLINE: tropa que você mandou e ainda vai aparecer (0,5 s)
 		for ac in fila_acoes:
 			if ac.lado != lado_local or ac.tipo != "colocar" or bool(ac.get("inv", false)) != espiando:
 				continue
@@ -3655,12 +3772,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 		else:
 			_pausar()
 		return
+	if not replay.is_empty():                          # REPLAY: barra para arrastar e toque = velocidade
+		_toque_replay(ev)
+		return
 	var pos := C.pos_toque(self, ev)
 	if not pos.is_finite() or fim or (painel and painel.visible):
-		return
-	if not replay.is_empty():                          # REPLAY: tocar na tela troca a velocidade
-		replay_vel = 2 if replay_vel == 1 else (4 if replay_vel == 2 else 1)
-		mostrar_banner("REPLAY · velocidade %dx" % replay_vel, 1.2)
 		return
 	if pegar_energia(pos):
 		return

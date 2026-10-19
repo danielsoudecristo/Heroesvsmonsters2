@@ -56,6 +56,7 @@ static var pvp_sala := {}                ## PvP ONLINE: a sala que o servidor ac
 static var serie_bot := {}
 ## REPLAY para assistir (36_replays.sql): a "receita" da partida + "lado_ver". Vazio = partida normal.
 static var pvp_replay := {}
+static var replays_volta := "res://cenas/sala_entrada.tscn"   ## para onde o "← VOLTAR" da tela de replays leva
 static var tutorial_menu := false        ## já viu o tutorial do menu
 static var tutorial_jogo := false        ## já fez o tutorial da primeira batalha
 static var convite_visto := false        ## já abriu "Convide amigos" (tira a etiqueta NOVO)

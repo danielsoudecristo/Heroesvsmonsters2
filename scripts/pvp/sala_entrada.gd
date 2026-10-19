@@ -625,6 +625,7 @@ func _tocar(b: String) -> void:
 			_enviar()
 		"replays":
 			if _achou_t < 0.0:
+				Perfil.replays_volta = "res://cenas/sala_entrada.tscn"
 				_sair("res://cenas/replays.tscn")
 
 func _unhandled_key_input(ev: InputEvent) -> void:

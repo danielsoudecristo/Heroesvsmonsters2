@@ -99,7 +99,7 @@ func _notification(what: int) -> void:
 		_voltar()
 
 func _voltar() -> void:
-	get_tree().change_scene_to_file("res://cenas/sala_entrada.tscn")
+	get_tree().change_scene_to_file(Perfil.replays_volta)
 
 func _assistir(item: Dictionary) -> void:
 	estado = "abrindo"
