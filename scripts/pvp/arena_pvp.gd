@@ -1304,7 +1304,7 @@ func _atravessar(u: Unidade, para_x: float) -> void:
 	u.reset_physics_interpolation()                 # atravessou o portal: aparece do outro lado (sem deslizar pelo mundo)
 	u.atravessou = true
 	u.x_saida = para_x
-	if u.lado == lado_local and not espiando and not _avisou_invasao:   # 1ª vez na partida: avisa que dá para ir junto
+	if u.lado == lado_local and not espiando and not _avisou_invasao and replay.is_empty():   # 1ª vez na partida: avisa que dá para ir junto
 		_avisou_invasao = true
 		mostrar_banner("Sua tropa entrou na arena inimiga!\nToque em ESPIAR para ir junto e mandar mais tropas", 2.8)
 	_abrir_fenda(para_x + (-6.0 if _lado_b(para_x) else 6.0), u, true)   # o portal de saída abre na outra arena
@@ -2396,7 +2396,7 @@ func _limpar_campo() -> void:
 		pr.ativo = false
 	ondas.clear(); orbes.clear(); voos.clear(); fendas.clear()
 	carta_sel = -1
-	if espiando:
+	if espiando and replay.is_empty():              # (REPLAY: fica na arena que a pessoa escolheu)
 		espiar_t = 0.0
 		_trocar_vista(false)
 
@@ -2493,12 +2493,16 @@ func _iniciar_replay() -> void:
 	barra_replay.draw.connect(_desenhar_barra_replay)
 	ui.add_child(barra_replay)
 	var nomes: Dictionary = rede.get("nomes", {})
-	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nArraste a barra para ir a qualquer momento · toque na tela: 1x / 2x / 4x" % [
+	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nArraste a barra para ir a qualquer momento · VER ARENA troca de arena · toque na tela: 1x / 2x / 4x" % [
 		str(nomes.get("heroes", "Heroes")), str(nomes.get("monsters", "Monsters"))], 4.0)
 
 ## Volta a partida para o começo (com todas as jogadas guardadas de novo).
 func _recomecar_replay() -> void:
+	var vista := espiando
 	comecar()
+	if vista != espiando:
+		espiando = vista
+		_aplicar_vista()
 	for a in replay.get("acoes", []):
 		if a is Dictionary:
 			var b: Dictionary = a.duplicate()
@@ -2534,7 +2538,45 @@ func _correr_replay() -> void:
 		explosoes.clear()
 
 func _ret_barra_replay() -> Rect2:
-	return Rect2(270, C.H - 40, C.W - 410, 12)
+	return Rect2(376, C.H - 40, C.W - 376 - 316, 12)
+
+## Botão ← VOLTAR (sai do replay e volta para a lista de onde a pessoa veio).
+func _ret_voltar_replay() -> Rect2:
+	return Rect2(146, C.H - 62, 110, 52)
+
+## Botão de TROCAR DE ARENA: ver a arena dos Heroes ou a dos Monsters (qualquer momento, sem precisar de tropa lá).
+func _ret_arena_replay() -> Rect2:
+	return Rect2(C.W - 232, C.H - 62, 222, 52)
+
+## Qual arena o botão mostra se tocar (a que NÃO está na tela agora).
+func _arena_do_botao_replay() -> String:
+	return "monsters" if _arena_vista() == "heroes" else "heroes"
+
+func _trocar_arena_replay() -> void:
+	_trocar_vista(not espiando)
+	Sons.tocar("Jogo/som/portal", 0.35)
+	var nomes: Dictionary = rede.get("nomes", {})
+	var a := _arena_vista()
+	var quem := str(nomes.get(a, ""))
+	mostrar_banner("Arena dos %s%s" % ["Heroes" if a == "heroes" else "Monsters", (" · " + quem) if quem != "" else ""], 1.4)
+
+func _botao_replay(b: Control, r: Rect2, txt: String, cor: Color, borda: Color) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = cor
+	sb.border_color = borda
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(16)
+	b.draw_style_box(sb, r)
+	var linhas := txt.split("\n")
+	var tam := 17
+	for l in linhas:
+		while tam > 11 and f_titulo.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x > r.size.x - 14:
+			tam -= 1
+	var y0 := r.get_center().y - (linhas.size() - 1) * (tam + 2) / 2.0 + tam * 0.36
+	for i in linhas.size():
+		var pos := Vector2(r.position.x, y0 + i * (tam + 2))
+		b.draw_string_outline(f_titulo, pos, linhas[i], HORIZONTAL_ALIGNMENT_CENTER, r.size.x, tam, 6, Color("120c04"))
+		b.draw_string(f_titulo, pos, linhas[i], HORIZONTAL_ALIGNMENT_CENTER, r.size.x, tam, Color.WHITE)
 
 func _passo_da_barra(x: float) -> int:
 	var r := _ret_barra_replay()
@@ -2566,11 +2608,17 @@ func _desenhar_barra_replay() -> void:
 	b.draw_circle(bola, 15 if replay_arrasto >= 0 else 12, Color("120c04"))
 	b.draw_circle(bola, 12 if replay_arrasto >= 0 else 9, Color.WHITE)
 	var txt_t := "%s / %s" % [_mmss(agora / 60.0), _mmss(total / 60.0)]
-	b.draw_string_outline(f_titulo, Vector2(fundo_r.position.x + 18, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
-	b.draw_string(f_titulo, Vector2(fundo_r.position.x + 18, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
-	var txt_v := "⏩ indo..." if replay_alvo >= 0 else "%dx" % replay_vel
-	b.draw_string_outline(f_titulo, Vector2(r.end.x + 22, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
-	b.draw_string(f_titulo, Vector2(r.end.x + 22, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("ffd34d"))
+	b.draw_string_outline(f_titulo, Vector2(266, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(266, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+	_botao_replay(b, _ret_voltar_replay(), "← VOLTAR", Color("4a5fae"), Color("aebcff"))
+	var a := _arena_do_botao_replay()
+	var nomes: Dictionary = rede.get("nomes", {})
+	var quem := str(nomes.get(a, ""))
+	_botao_replay(b, _ret_arena_replay(), "VER ARENA %s%s" % ["HEROES" if a == "heroes" else "MONSTERS", ("\n" + quem) if quem != "" else ""],
+		Color("c96a12") if a == "heroes" else Color("2f8a3c"), Color("ffd08a") if a == "heroes" else Color("b8f5a8"))
+	var txt_v := "⏩" if replay_alvo >= 0 else "%dx" % replay_vel
+	b.draw_string_outline(f_titulo, Vector2(r.end.x + 16, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(r.end.x + 16, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("ffd34d"))
 
 ## Toques no replay: arrastar na barra (embaixo) = ir para aquele momento; tocar no resto = velocidade.
 func _toque_replay(ev: InputEvent) -> void:
@@ -2584,7 +2632,15 @@ func _toque_replay(ev: InputEvent) -> void:
 	if not (apertou or soltou or moveu):
 		return
 	var pos: Vector2 = barra_replay.make_input_local(ev).position
-	var area := _ret_barra_replay().grow_individual(130, 34, 130, 40)
+	var area := _ret_barra_replay().grow_individual(16, 34, 16, 40)
+	if apertou and not (painel and painel.visible):
+		if _ret_voltar_replay().grow(6).has_point(pos):
+			Sons.tocar("Jogo/som/clique", 0.5)
+			_ir_menu()
+			return
+		if _ret_arena_replay().grow(6).has_point(pos):
+			_trocar_arena_replay()
+			return
 	if apertou:
 		if area.has_point(pos):
 			replay_arrasto = _passo_da_barra(pos.x)
@@ -2852,7 +2908,7 @@ func _aplicar_acao(a: Dictionary) -> void:
 				rede.espiar_pedido = false
 			if energias[lado] >= custo_espiar():
 				energias[lado] -= custo_espiar()
-				if lado == lado_local:
+				if lado == lado_local and replay.is_empty():
 					espiar_t = C.ESPIAR_DURACAO
 					_trocar_vista(true)
 
@@ -3485,7 +3541,7 @@ func _process(dt: float) -> void:
 			energias[lado_local] += v.valor          # (online o valor é 0: a energia já entrou no passo da partida)
 			voos.remove_at(i)
 		i -= 1
-	if espiando and not get_tree().paused and tropas_na_arena_inimiga() == 0:   # suas tropas de lá caíram: volta sozinho
+	if espiando and replay.is_empty() and not get_tree().paused and tropas_na_arena_inimiga() == 0:   # suas tropas de lá caíram: volta sozinho
 		_trocar_vista(false)
 		if not fim:
 			mostrar_banner("Suas tropas caíram\nde volta à sua arena", 2.2)

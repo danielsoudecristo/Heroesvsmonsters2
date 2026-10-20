@@ -329,11 +329,14 @@ const PREMIO := {"base": 25, "por_nivel": 5.0, "chefe_por_nivel": 4.0, "marco_po
 static func eh_marco(n: int) -> bool:
 	return n % MARCO_CADA == 0
 
-## Níveis em que dá para começar (1 e o nível depois de cada marco já vencido).
+## Níveis em que dá para começar: 1, o nível depois de cada marco já vencido e (o último, já sugerido)
+## o nível DEPOIS DO ÚLTIMO CONCLUÍDO — a campanha continua de onde parou, não volta para o marco.
 static func inicios_liberados(recorde: int) -> Array:
 	var l: Array = [1]
 	var m := MARCO_CADA
 	while m <= recorde:
 		l.append(m + 1)
 		m += MARCO_CADA
+	if recorde + 1 > int(l[-1]):
+		l.append(recorde + 1)
 	return l

@@ -178,8 +178,8 @@ func _ready() -> void:
 		_preparar_inicios()
 		selecao.abrir(cartas_todas)
 
-## MARCOS: depois de vencer o nível 10, 20, 30... dá para começar do nível seguinte (não precisa
-## refazer tudo para tentar o recorde). No HardCore não: lá perder é voltar para o 1.
+## CONTINUAR: a campanha começa no nível depois do ÚLTIMO CONCLUÍDO (e dá para voltar para os marcos
+## 11, 21, 31... ou o 1). No HardCore não: lá perder é voltar para o 1.
 func _preparar_inicios() -> void:
 	selecao.info_nivel = _info_nivel
 	if nivel_inicial != 1 or dif.perde_tudo:
@@ -187,7 +187,7 @@ func _preparar_inicios() -> void:
 		selecao.inicio = nivel_inicial
 		return
 	selecao.inicios = C.inicios_liberados(Perfil.recorde(Perfil.dificuldade, lado_jogador))
-	selecao.inicio = int(selecao.inicios[-1])               # já sugere o marco mais alto (o mais perto do recorde)
+	selecao.inicio = int(selecao.inicios[-1])               # já sugere o nível depois do último concluído
 
 ## Uma linha sobre o nível n (aparece na janela de cartas para escolher o baralho certo).
 func _info_nivel(n: int) -> String:
@@ -545,7 +545,7 @@ func _fim_do_nivel() -> void:
 	if novo:
 		txt += "  ·  ⭐ NOVO RECORDE!"
 	if C.eh_marco(nivel):
-		txt += "\nMARCO %d VENCIDO! Agora você pode começar do nível %d." % [nivel, nivel + 1]
+		txt += "\nMARCO %d VENCIDO!" % nivel
 	elif premio.variedade < C.PREMIO.variedade_max and cartas_usadas.size() < 7:
 		txt += "\nUse mais cartas diferentes: +%d%% de moedas por carta!" % roundi(C.PREMIO.variedade_por_carta * 100)
 	mostrar_banner(txt, 4.5)
