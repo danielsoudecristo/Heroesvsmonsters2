@@ -135,7 +135,7 @@ func _draw() -> void:
 	draw_set_transform(_O())
 	_botao(Rect2(18, 14, 150, 50), "← VOLTAR", Color("4a5fae"), _apertado == "voltar")
 	_texto(Vector2(PALCO.x / 2.0, 66), "▶ REPLAYS", 46, OURO, 7)
-	_texto(Vector2(PALCO.x / 2.0, 104), "Suas batalhas e as dos seus amigos · somem depois de 24 horas", 18, Color(1, 1, 1, 0.75), 3)
+	_texto(Vector2(PALCO.x / 2.0, 104), "Batalhas online de todos · as suas e dos amigos primeiro · somem em 24 horas", 18, Color(1, 1, 1, 0.75), 3)
 	match estado:
 		"carregando":
 			_texto(Vector2(PALCO.x / 2.0, 360), "Carregando...", 28, Color.WHITE, 5)
@@ -172,7 +172,8 @@ func _linha(i: int, it: Dictionary) -> void:
 	_texto_esq(Vector2(x + 14, y), ("👑 " if v == "monsters" else "") + nm, 26, COR_NOME.monsters)
 	var modo := "Cerco" if str(it.get("modo", "normal")) == "cerco" else "Batalha"
 	var horas := maxi(1, ceili(float(it.get("some_em", 0)) / 3600.0))
-	var info := "%s · %s · some em %dh" % [modo, "sua batalha" if it.get("minha", false) == true else "de um amigo", horas]
+	var de := "sua batalha" if it.get("minha", false) == true else ("de um amigo" if it.get("amigo", true) == true else "online")
+	var info := "%s · %s · some em %dh" % [modo, de, horas]
 	_texto_esq(Vector2(r.position.x + 28, r.position.y + 68), info, 16, Color(1, 1, 1, 0.65))
 	_botao(_ret_ver(i), "▶ ASSISTIR", Color("2fa84f"), _apertado == "ver%d" % i, 20)
 
