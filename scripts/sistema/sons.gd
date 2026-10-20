@@ -58,6 +58,8 @@ func carregar(caminho: String) -> AudioStream:
 			break
 	if s == null and caminho == "Jogo/som/energia":
 		s = _som_energia()                    # sem arquivo: o jogo cria o som sozinho
+	if s == null and caminho == "Jogo/som/colocar":
+		s = _som_colocar()                    # sem arquivo: "tum" do personagem batendo na terra
 	_cache[caminho] = s
 	return s
 
@@ -81,6 +83,33 @@ func tocar(caminho: String, volume := 1.0) -> void:
 func do_personagem(p: PersonagemDados, nome: String) -> void:
 	if p and p.sons.has(nome):
 		tocar(p.sons[nome], p.volumes.get(nome, 0.8))
+
+## Som de COLOCAR o personagem: "tum" grave dele batendo na terra + um pouco de poeira (feito pelo jogo, sem arquivo).
+## Para trocar por outro, é só pôr um arquivo em assets/Jogo/som/colocar.mp3 (ou .wav/.ogg).
+func _som_colocar() -> AudioStreamWAV:
+	const TAXA := 22050
+	var dur := 0.32
+	var n := int(dur * TAXA)
+	var b := PackedByteArray()
+	b.resize(n * 2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var fase := 0.0
+	var poeira := 0.0
+	for i in n:
+		var t := float(i) / TAXA
+		var f := 45.0 + 110.0 * exp(-t * 22.0)          # o "tum" desce de ~155 Hz para 45 Hz
+		fase += TAU * f / TAXA
+		var tum := sin(fase) * minf(1.0, t * 900.0) * exp(-t * 13.0)
+		poeira = poeira * 0.82 + rng.randf_range(-1.0, 1.0) * 0.18   # ruído abafado (terra)
+		var v := tum * 0.95 + poeira * 1.6 * exp(-t * 26.0)
+		b.encode_s16(i * 2, int(clampf(v * 0.85, -1.0, 1.0) * 32000.0))
+	var w := AudioStreamWAV.new()
+	w.format = AudioStreamWAV.FORMAT_16_BITS
+	w.mix_rate = TAXA
+	w.stereo = false
+	w.data = b
+	return w
 
 ## Som de pegar energia: "plim-plim" brilhante subindo (feito pelo próprio jogo, sem arquivo).
 ## Para trocar por outro, é só pôr um arquivo em assets/Jogo/som/energia.mp3 (ou .wav/.ogg).

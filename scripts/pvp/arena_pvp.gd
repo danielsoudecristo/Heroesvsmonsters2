@@ -665,6 +665,8 @@ func colocar(lado: String, id: String, linha: int, col: int, local: bool, inv :=
 		for k in 10:                                    # faíscas do portal (enfeite: randf, nunca o rng da partida)
 			faiscas.append({"pos": Vector2(x, C.linha_y(linha) - randf_range(20, 100)), "vel": Vector2(randf_range(-70, 70), randf_range(-80, 30)), "t": 0.0})
 	explosoes.append([Vector2(x, C.linha_y(linha) - 10), 34.0, 0.0, Color("ffe08a") if lado == "heroes" else Color("9be05a")])
+	if ("monsters" if _lado_b(x) else "heroes") == _arena_vista():   # bateu na terra da arena que está na tela: "tum"
+		Sons.tocar("Jogo/som/colocar", 0.9)
 	return true
 
 # =================================================================== COMANDOS DO JOGADOR (menu do personagem)

@@ -672,6 +672,7 @@ func colocar_heroi(casa: Vector2i) -> void:
 		energia -= p.custo
 	recarga[p.id] = p.recarga
 	criar_unidade(p.id, lado_jogador, casa.y, casa.x, nivel_da_carta(p.id))
+	Sons.tocar("Jogo/som/colocar", 0.9)            # bateu na terra: "tum"
 	cartas_usadas[p.id] = int(cartas_usadas.get(p.id, 0)) + 1
 	carta_sel = -1                                 # colocou: solta a carta
 	if C.ESCONDER_CARTAS_AO_COLOCAR:
