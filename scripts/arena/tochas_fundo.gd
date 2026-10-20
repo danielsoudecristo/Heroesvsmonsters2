@@ -54,6 +54,14 @@ func usar(tex: Texture2D, noite: bool) -> void:
 		gt.height = 128
 		_tex_luz = gt
 
+## O castelo caiu (castelo_caiu.gd): apaga as tochas que ficavam nele (x da imagem < x_img); as da cerca ficam.
+## (o próximo usar() traz todas de volta)
+func esconder_ate(x_img: float) -> void:
+	var fundo := get_parent() as Sprite2D
+	var meio_x: float = fundo.texture.get_size().x / 2.0 if fundo and fundo.texture else 1280.0
+	tochas = tochas.filter(func(e): return e.p.x + meio_x >= x_img)
+	visible = not tochas.is_empty()
+
 func _process(dt: float) -> void:
 	if not visible:
 		return

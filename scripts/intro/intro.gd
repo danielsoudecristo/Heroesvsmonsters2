@@ -159,6 +159,8 @@ var personagens: Control                 # janela de Personagens: evoluir (scrip
 var social: Control                      # Social: amigos, conversa, chat, duelo (scripts/intro/social.gd)
 var modo_pvp: Control                    # escolha do modo: Batalha ou Cerco (scripts/intro/modo_pvp.gd)
 var convidar: Control                    # CONVIDE AMIGOS: código de indicação (scripts/intro/convidar.gd)
+var loja: Control                        # LOJA DE MOEDAS: abre tocando nas moedas do perfil (scripts/intro/loja.gd)
+var _ret_moedas := Rect2()               # onde a pílula de moedas do perfil foi desenhada (toque = abre a loja)
 var atualizacao: Control                 # ATUALIZAÇÃO pela Play Store dentro do jogo (scripts/intro/atualizacao.gd)
 var tour: Control                        # TUTORIAL do menu com a mãozinha (scripts/intro/tour_menu.gd)
 var dificuldade: Control                 # janela do Novo jogo: Fácil / Médio / Difícil / HardCore (scripts/intro/dificuldade.gd)
@@ -263,6 +265,9 @@ func _ready() -> void:
 	convidar = preload("res://scripts/intro/convidar.gd").new()
 	convidar.intro = self
 	add_child(convidar)
+	loja = preload("res://scripts/intro/loja.gd").new()
+	loja.intro = self
+	add_child(loja)
 	tour = preload("res://scripts/intro/tour_menu.gd").new()     # (por último: fica por cima de tudo)
 	tour.intro = self
 	add_child(tour)
@@ -947,7 +952,7 @@ func _escolher_lado(i: int) -> void:
 var _telas_abertas := {}
 func _vigiar_telas() -> void:
 	var telas := {"Ranking": ranking, "Personagens": personagens, "Social": social, "Convidar amigos": convidar,
-		"Modo PvP": modo_pvp, "Dificuldade": dificuldade}
+		"Modo PvP": modo_pvp, "Dificuldade": dificuldade, "Loja": loja}
 	var aberta := ""
 	for nome in telas:
 		var n: Control = telas[nome]
@@ -1254,7 +1259,7 @@ func subida_teclado(campo: Control, fundo_palco_y: float) -> float:
 	return maxf(0.0, O.y + fundo_palco_y + 12.0 - (get_viewport_rect().size.y - kb))
 
 func _janela_aberta() -> bool:
-	return (atualizacao != null and atualizacao.bloqueando()) or (modo_pvp != null and modo_pvp.visible) or (convidar != null and convidar.visible) or (ranking != null and ranking.visible) or (personagens != null and personagens.visible) or (dificuldade != null and dificuldade.visible) or (social != null and social.visible)
+	return (atualizacao != null and atualizacao.bloqueando()) or (modo_pvp != null and modo_pvp.visible) or (convidar != null and convidar.visible) or (loja != null and loja.visible) or (ranking != null and ranking.visible) or (personagens != null and personagens.visible) or (dificuldade != null and dificuldade.visible) or (social != null and social.visible)
 
 func _avisar(txt: String) -> void:
 	aviso = txt
@@ -1268,6 +1273,9 @@ func _voltar() -> void:
 		_clique(false)
 	elif convidar and convidar.visible:
 		convidar.fechar()
+		_clique(false)
+	elif loja and loja.visible:
+		loja.fechar()
 		_clique(false)
 	elif social and social.visible and social._modo_janela:
 		social._modo_janela = false
@@ -2143,6 +2151,9 @@ func _tocar(p: Vector2) -> void:
 			elif _ret_convidar().has_point(p):
 				_clique(true)
 				convidar.abrir()
+			elif _ret_moedas.grow(8).has_point(p):         # moedas do perfil: abre a LOJA
+				_clique(true)
+				loja.abrir()
 			elif _ret_perfil().has_point(p):
 				_clique(false)
 				ranking.abrir("ligas")
@@ -2558,10 +2569,18 @@ func _desenhar_perfil(lado: String) -> void:
 	_trofeu(Vector2(p1.position.x + 13, p1.get_center().y), 17)
 	_texto(Vector2(p1.position.x + 26, p1.position.y + 17.5), t1, 14, Color.WHITE, f_texto, 3, CONTORNO)
 	var t2 := str(Perfil.moedas)
-	var p2 := Rect2(p1.end.x + 6, y, _larg(f_texto, t2, 14) + 38, 24)
+	var p2 := Rect2(p1.end.x + 6, y, _larg(f_texto, t2, 14) + 58, 24)
 	_caixa(p2, Color(0, 0, 0, 0.38), 12, 1, Color(1, 1, 1, 0.08))
 	_moeda(Vector2(p2.position.x + 13, p2.get_center().y), 17)
 	_texto(Vector2(p2.position.x + 26, p2.position.y + 17.5), t2, 14, Color("ffe58a"), f_texto, 3, CONTORNO)
+	# "+" verde: tocar nas moedas abre a LOJA (pulsa de leve para chamar atenção)
+	var mais := Vector2(p2.end.x - 12, p2.get_center().y)
+	var pul := 1.0 + 0.08 * sin(relogio * 4.0)
+	_ci.draw_circle(mais, 10.5 * pul, CONTORNO)
+	_bola(mais, 9.0 * pul, Color("d9ff9a"), Color("3f8f1a"))
+	_ci.draw_line(mais - Vector2(4.5, 0), mais + Vector2(4.5, 0), Color.WHITE, 2.6, true)
+	_ci.draw_line(mais - Vector2(0, 4.5), mais + Vector2(0, 4.5), Color.WHITE, 2.6, true)
+	_ret_moedas = p2
 	# crachá do lado (HEROES / MONSTERS) na mesma linha, antes do selo da liga — bem legível
 	var tam_s := 12
 	while tam_s > 9 and p2.end.x + 6 + _larg(f_titulo, sl, tam_s) + 14 > limite:

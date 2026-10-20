@@ -8,7 +8,8 @@ extends Control
 
 const JANELA := Rect2(100, 40, 1080, 650)
 const LISTA := Rect2(140, 128, 1000, 470)          ## área que rola
-const ABAS := [["amigos", "Amigos"], ["chat", "Chat geral"], ["adicionar", "Adicionar"]]
+## A 3ª é um BOTÃO (verde): abre os REPLAYS (36_replays.sql) — as batalhas suas e dos amigos das últimas 24 h.
+const ABAS := [["amigos", "Amigos"], ["chat", "Chat geral"], ["replays", "▶ Replays"]]
 const CADA_RESUMO := 10.0
 const CADA_CONVERSA := 3.0
 const CADA_CHAT := 4.0
@@ -563,6 +564,10 @@ func _tocar(p: Vector2) -> void:
 		for i in ABAS.size():
 			if _ret_aba(i).has_point(p) and aba != ABAS[i][0]:
 				intro._clique(false)
+				if ABAS[i][0] == "replays":
+					Perfil.replays_volta = "res://cenas/intro.tscn"
+					get_tree().change_scene_to_file("res://cenas/replays.tscn")
+					return
 				_mudar_aba(ABAS[i][0])
 				return
 	if _tem_campo() and _ret_enviar().has_point(p):
@@ -635,7 +640,11 @@ func _desenhar_abas() -> void:
 	for i in ABAS.size():
 		var r := _ret_aba(i)
 		var on: bool = aba == ABAS[i][0]
-		if on:
+		if ABAS[i][0] == "replays":                    # botão VERDE (abre a tela de replays)
+			intro._caixa(Rect2(r.position + Vector2(0, 4), r.size).grow(2), Color("0f3d1a"), 17)
+			intro._caixa(r.grow(2), Color("0f3d1a"), 17)
+			intro._botao_degrade(r, Color("8cf0a0"), Color("2fd15a"), Color("1e8a3a"), 15)
+		elif on:
 			intro._caixa(Rect2(r.position + Vector2(0, 4), r.size).grow(2), Color("4a2a06"), 17)
 			intro._caixa(r.grow(2), Color("4a2a06"), 17)
 			intro._botao_degrade(r, Color("ffe98a"), Color("ffc43a"), Color("c97a0c"), 15)
@@ -771,7 +780,7 @@ func _desenhar_lista() -> void:
 func _lista_amigos(y: float, w: float) -> float:
 	if amigos.is_empty() and not carregando:
 		intro._texto_cartoon(Vector2(w / 2.0, y + 90), "Você ainda não tem amigos.", 26, intro.CREME, intro.f_titulo, 2.0, true)
-		intro._texto_cartoon(Vector2(w / 2.0, y + 130), "Vá na aba Adicionar e procure pelo nome de alguém!", 19, Color("c9d2ff"), intro.f_texto, 1.4, true)
+		intro._texto_cartoon(Vector2(w / 2.0, y + 130), "Adicione amigos no fim de uma batalha online (+ Adicionar amigo)!", 19, Color("c9d2ff"), intro.f_texto, 1.4, true)
 		return y + 180
 	var grupos := [["Pedidos para você", func(a): return a.status == "pendente" and not a.pedido_meu],
 		["Amigos", func(a): return a.status == "aceita"],

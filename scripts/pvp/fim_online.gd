@@ -11,6 +11,8 @@ const W := 1280.0
 const H := 720.0
 const CARTA := Vector2(400, 470)
 const CONTORNO := Color("24130a")
+## PESSOA REAL (esta tela só aparece no online): contorno do perfil — Heroes LARANJA, Monsters VERDE.
+const CONTORNO_REAL := {"heroes": Color("ff8c1a"), "monsters": Color("3ddc4a")}
 const COR_LADO := {"heroes": [Color("ffe98a"), Color("f6c343"), Color("b8740f")], "monsters": [Color("d9ff9a"), Color("8be03c"), Color("3f8f1a")]}
 
 var f_titulo: Font
@@ -375,7 +377,8 @@ func _cartao(j: Dictionary, r: Rect2, adversario: bool, a: float) -> void:
 			_caixa(r.grow(10 + i * 7 + pul * 4), Color(1, 0.83, 0.3, (0.12 - i * 0.03) * a), 34)
 	_caixa(Rect2(r.position + Vector2(0, 10), r.size).grow(6), Color(0, 0, 0, 0.45 * a), 32)
 	_caixa(r.grow(6), CONTORNO, 32)
-	_caixa(r.grow(3), (cores[1] as Color) if venceu else Color("6f7bb8"), 30)
+	var real: Color = CONTORNO_REAL.get(lado, CONTORNO_REAL.heroes)
+	_caixa(r.grow(3), real, 30)                         # PESSOA REAL: borda laranja (Heroes) / verde (Monsters)
 	_degrade(r, Color("3e4f96"), Color("1b2350"), 28)
 	# faixa do lado
 	var faixa := Rect2(r.position + Vector2(10, 10), Vector2(r.size.x - 20, 44))
@@ -385,6 +388,10 @@ func _cartao(j: Dictionary, r: Rect2, adversario: bool, a: float) -> void:
 	var fc := Vector2(r.get_center().x, r.position.y + 142)
 	var fr := 52.0
 	draw_circle(fc + Vector2(0, 5), fr + 8, Color(0, 0, 0, 0.35))
+	var pul := 0.5 + 0.5 * sin(_t * 5.0)               # contorno de PESSOA REAL em volta da foto
+	draw_arc(fc, fr + 17, 0, TAU, 56, Color(real, 0.25 + 0.2 * pul * a), 7, true)
+	draw_circle(fc, fr + 14, CONTORNO)
+	draw_circle(fc, fr + 11, real)
 	draw_circle(fc, fr + 8, CONTORNO)
 	_bola(fc, fr + 5, cores[0], cores[2])
 	var url := str(j.get("avatar_url", "")) if j.get("avatar_url") != null else ""

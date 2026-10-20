@@ -18,6 +18,9 @@ var pontos_dele := 0
 var nome_dele := "Adversário"
 var proxima: Dictionary = {}           # sala_json da próxima partida
 var ao_sair: Callable                  # sair = perder a série (W.O. na próxima)
+var bot := false                       # SÉRIE CONTRA O BOT: não tem sala no servidor
+var proximo_lado := ""                 # (bot) o lado da próxima partida
+var ao_entrar: Callable                # (bot) entra na próxima partida com o lado
 var _t := 0.0
 var _entrando := false
 var _proximo_lado := "heroes"
@@ -27,6 +30,9 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if bot:
+		_proximo_lado = proximo_lado
+		return
 	var meu_id: String = get_node("/root/Conta").meu_id()
 	_proximo_lado = "heroes" if str(proxima.get("heroes", "")) == meu_id else "monsters"
 
@@ -38,6 +44,9 @@ func _process(dt: float) -> void:
 
 func _entrar() -> void:
 	_entrando = true
+	if bot:
+		ao_entrar.call(_proximo_lado)
+		return
 	var conta: Node = get_node("/root/Conta")
 	var token: String = await conta.token_fresco()
 	var s := proxima.duplicate()
@@ -56,6 +65,9 @@ func _gui_input(ev: InputEvent) -> void:
 		accept_event()
 		if _bt_sair.has_point(get_local_mouse_position()) and ao_sair.is_valid() and not _entrando:
 			_entrando = true                           # sair = W.O. na próxima partida: o outro leva a série
+			if bot:
+				ao_sair.call()
+				return
 			var outro := "monsters" if _proximo_lado == "heroes" else "heroes"
 			get_node("/root/Conta").chamar("finalizar_pvp", {"p_sala": str(proxima.get("id", "")), "p_vencedor": outro, "p_resumo": "wo"})
 			ao_sair.call()

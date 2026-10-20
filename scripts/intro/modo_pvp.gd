@@ -7,9 +7,9 @@ const CARTA := Vector2(316, 470)
 const ESPACO := 22.0
 const MODOS := [
 	{"id": "normal", "nome": "Batalha", "cor": Color("3a7bd5"), "tag": "VALE TROFÉUS",
-	 "linhas": ["Atacam e defendem juntos", "Tropas marcham ao castelo", "3 min · derrube o castelo", "Duelo contra o mundo"]},
+	 "linhas": ["Atacam e defendem juntos", "Tropas marcham ao castelo", "Sem relógio · derrube o castelo", "Duelo contra o mundo"]},
 	{"id": "cerco", "nome": "Cerco", "cor": Color("c0392b"), "tag": "2 RODADAS",
-	 "linhas": ["Rodada 1: você DEFENDE", "Rodada 2: você ATACA", "Aguente mais tempo", "Escolha Heroes ou Monsters"]},
+	 "linhas": ["Rodada 1: você DEFENDE", "Rodada 2: você ATACA", "Derrube mais rápido · sem empate", "Escolha Heroes ou Monsters"]},
 	{"id": "campeonato", "nome": "Campeonato", "cor": Color("d68a1a"), "tag": "NOVO!",
 	 "linhas": ["16 jogadores · mata-mata", "Heroes × Monsters sempre", "Oitavas até a FINAL", "Sala de 2 min com chat"]},
 ]

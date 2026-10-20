@@ -75,9 +75,11 @@ var vidas := {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 var recargas := {"heroes": {}, "monsters": {}}
 var herois: Array = []                      # [linha] -> Array[Unidade]
 var monstros: Array = []
-var tempo := P.DURACAO
+var tempo := 0.0                            # segundos de batalha (conta para CIMA: não tem relógio de fim)
 var preparo := P.PREPARO
-var furia_t := -1.0                         # segundos de FÚRIA (o tempo acabou e nenhum castelo caiu); -1 = ainda não
+var mare := 1                               # MARÉ DE GUERRA (1..P.MARE.max): sobe com o tempo de batalha
+var dano_feito := {"heroes": 0.0, "monsters": 0.0}   # dano que cada lado já deu no castelo do OUTRO (desempate)
+var gasto := {"heroes": 0.0, "monsters": 0.0}        # energia gasta em tropas (CERCO: desempate da rodada)
 var fim := false
 var vencedor := ""
 var abatidas := 0                           # monstros derrotados
@@ -86,6 +88,7 @@ var sol_t := 2.0
 var bot_t := 4.0
 var bot_nivel := 1
 var campeonato := false                     # esta partida é uma luta do Campeonato (scripts/sistema/campeonato.gd)
+var serie_bot := false                      # Batalha contra o BOT em SÉRIE (Perfil.serie_bot), igual à de pessoa real
 var bot_estilo := ""                        # atacante / defensor / economista (sorteado por partida)
 var bot_nivel_tropa := 1                    # nível das tropas do bot (perto da média dos seus)
 var bot_horda := 0                          # tropas da horda que ainda vão sair
@@ -109,6 +112,17 @@ var rede := {}                              # vazio = contra o bot. Ver _prepara
 var canal: RedePvp
 var fila_acoes: Array = []                  # ações (minhas e do adversário) esperando o passo delas
 var seq_acao := 0
+# ---------------------------------------------------------------- REPLAY (36_replays.sql) — só assistir, apaga em 24 h
+var replay := {}                            ## assistindo: a "receita" (semente + jogadas). Vazio = jogando de verdade
+var assistindo := false                     ## (o HUD lê: no replay os toques são da arena)
+var replay_acoes: Array = []                ## online: as jogadas que aconteceram (dos dois lados), para o replay
+var replay_vel := 1                         ## velocidade do replay (1x, 2x, 4x)
+var ultimo_replay := {}                     ## (o que foi mandado para o servidor no fim da partida online)
+var replay_foto := ""                       ## (assistindo) a "foto" do fim: igual à de quem jogou = replay fiel
+var replay_alvo := -1                       ## BARRA DO REPLAY: passo para onde está indo (-1 = assistindo normal)
+var replay_arrasto := -1                    ## BARRA DO REPLAY: passo embaixo do dedo enquanto arrasta (-1 = não está arrastando)
+var barra_replay: Control                   ## BARRA DO REPLAY (desenhada por cima do jogo)
+const REPLAY_PASSOS_POR_QUADRO := 600       ## avançando pela barra: quantos passos por quadro (10 s de partida)
 var acumulado := 0.0
 
 class Projetil:
@@ -156,6 +170,8 @@ var faiscas: Array = []                     # brilho do portal {pos, vel, t, cor
 var choques: Array = []                     # {alvo, t, dano, pulsos, semente} — inimigo eletrocutado pelo Engenheiro
 var fx_chao: FxExplosao
 var fx_ar: FxExplosao
+var fx_magia_chao: FxMagia
+var fx_magia: FxMagia
 var clarões: Array = []                     # {pos, t, dir} — clarão no cano do Engenheiro (enfeite)
 var golpes_castelo: Array = []              # {pos, t, semente, dir} — raio explodindo na parede do castelo (enfeite)
 var estilhacos: Array = []                  # {pos, vel, t, giro, tam, cor} — pedras que voam da parede (enfeite)
@@ -175,6 +191,8 @@ var fundo: Sprite2D
 var _uid_n := 0                                     # número de cada tropa criada (comandos do menu online)
 var menu_unidade: Control                           # menu do personagem (parar / andar / voltar / poderes / remover)
 var tochas: Node2D                                  # fogo vivo nas tochas do fundo (tochas_fundo.gd)
+var castelo_caiu: Node2D                            # castelo destruído com fogo e fumaça (castelo_caiu.gd)
+var _ruina_vista := ""                              # arena cujo castelo em ruínas está na tela
 var _estacao_pvp := "?"                             # estação do fundo desta partida (sorteada uma vez)
 var ui: CanvasLayer
 var camada_painel: CanvasLayer
@@ -211,7 +229,15 @@ func _ready() -> void:
 	if campeonato:
 		modo = "normal"
 		bot_nivel = Campeonato.BOT_NIVEL
-	semente = randi()
+	if not Perfil.pvp_replay.is_empty():
+		_preparar_replay(Perfil.pvp_replay)
+		Perfil.pvp_replay = {}
+	if Perfil.pvp_sala.is_empty() and not campeonato and adversario == "" and replay.is_empty():
+		adversario = P.nome_adversario()              # contra o bot aparece sempre um NOME de jogador (nunca "bot")
+	if not campeonato and modo == "normal" and Perfil.pvp_sala.is_empty() and replay.is_empty():
+		_iniciar_serie_bot()                          # (o mesmo nome a série toda)
+	if replay.is_empty():
+		semente = randi()                             # (REPLAY: a semente é a da partida gravada)
 	if not Perfil.pvp_sala.is_empty():
 		_preparar_online(Perfil.pvp_sala)
 		Perfil.pvp_sala = {}
@@ -229,6 +255,9 @@ func _ready() -> void:
 	_montar_hud()
 	get_viewport().size_changed.connect(_centralizar)
 	_centralizar()
+	if not replay.is_empty():
+		_iniciar_replay()
+		return
 	escolhendo = true                                 # a partida só começa depois das cartas escolhidas
 	selecao.abrir(cartas_todas)
 
@@ -271,9 +300,16 @@ func comecar() -> void:
 		pr.ativo = false
 	ondas.clear(); orbes.clear(); voos.clear(); explosoes.clear(); textos.clear(); fendas.clear(); choques.clear(); clarões.clear()
 	golpes_castelo.clear(); estilhacos.clear(); marcas.clear()
+	if menu_unidade:
+		menu_unidade.zerar_preco()                    # partida nova: o poder vermelho volta ao preço inicial
+	if _ruina_vista != "" and castelo_caiu:          # revanche: o castelo volta inteiro (e as tochas dele)
+		_ruina_vista = ""
+		castelo_caiu.limpar()
+		tochas.usar(fundo.texture, false)
 	recargas = {"heroes": {}, "monsters": {}}
 	vidas = {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 	energias = {"heroes": float(P.ENERGIA_INICIAL), "monsters": float(P.ENERGIA_INICIAL)}
+	_somar_energia_extra()
 	if online():
 		rng.seed = semente                          # a MESMA sorte nos dois aparelhos
 	else:
@@ -283,9 +319,11 @@ func comecar() -> void:
 	prox_id_orbe = 1
 	fila_acoes.clear()
 	acumulado = 0.0
-	tempo = P.DURACAO
+	tempo = 0.0
 	preparo = P.PREPARO
-	furia_t = -1.0
+	mare = 1
+	dano_feito = {"heroes": 0.0, "monsters": 0.0}
+	gasto = {"heroes": 0.0, "monsters": 0.0}
 	fim = false
 	vencedor = ""
 	abatidas = 0
@@ -299,7 +337,7 @@ func comecar() -> void:
 	intervalo = 0.0
 	cartas_usadas = {}
 	_t_partida = 0.0
-	Conta.estou(_atividade(), ("contra " + adversario) if adversario != "" else "contra o bot (nível %d)" % bot_nivel)
+	Conta.estou(_atividade(), ("contra " + adversario) if online() else "contra o bot %s (nível %d)" % [adversario, bot_nivel])   # (só o painel vê)
 	if modo == "cerco":
 		rodada = 1
 		defensor = str(P.MODO_CERCO.primeiro_defende)
@@ -310,13 +348,15 @@ func comecar() -> void:
 	if modo == "cerco":
 		_banner_rodada()
 		return
-	var contra := (" · Contra %s" % adversario) if adversario != "" else " · Adversário nível %d (%s)" % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
+	var contra := " · Contra %s" % (adversario if adversario != "" else "o adversário")
 	if online():
 		contra = (" · Duelo contra %s" if rede.get("amistoso", false) else " · Você contra %s (online)") % adversario
 		if rede.get("amistoso", false) and _texto_aposta(rede.get("aposta_moedas", 0), rede.get("aposta_trofeus", 0)) != "":
 			contra += "\nValendo " + _texto_aposta(rede.get("aposta_moedas", 0), rede.get("aposta_trofeus", 0))
 		if rede.get("em_serie", false):                  # SÉRIE: troféu só para quem vencer de Heroes E de Monsters
 			contra += "\n" + _texto_serie()
+	elif serie_bot:
+		contra += "\n" + _texto_serie_bot()
 	mostrar_banner("PREPARE SUA ARENA\nColoque suas tropas e pegue a energia do céu%s" % contra, 4.5)
 
 # =================================================================== CENA E VISTA
@@ -354,6 +394,15 @@ func _montar_cena() -> void:
 	fx_ar.z_index = 9
 	fx_ar.par_chao = fx_chao
 	mundo.add_child(fx_ar)
+	fx_magia_chao = FxMagia.new()               # magia: chão (embaixo de todos) e esfera + impacto (por cima)
+	fx_magia_chao.camada = "chao"
+	fx_magia_chao.z_index = -5
+	mundo.add_child(fx_magia_chao)
+	fx_magia = FxMagia.new()
+	fx_magia.z_index = 11
+	fx_magia.par_chao = fx_magia_chao
+	fx_magia.projeteis = projeteis
+	mundo.add_child(fx_magia)
 	desenho_tela = Node2D.new()
 	desenho_tela.z_index = 11
 	desenho_tela.draw.connect(_desenhar_tela)
@@ -397,6 +446,20 @@ func _aplicar_vista() -> void:
 		fundo.add_child(tochas)
 	tochas.usar(tex, false)                            # fogo vivo nas tochas do fundo
 	tochas.scale = Vector2(-1, 1) if espiando else Vector2.ONE
+	if castelo_caiu == null:
+		castelo_caiu = preload("res://scripts/arena/castelo_caiu.gd").new()   # castelo em ruínas pegando fogo (fim)
+		fundo.add_child(castelo_caiu)
+	_ruina_vista = ""
+	castelo_caiu.limpar()
+	_checar_ruinas(true)                               # (trocou de vista depois do fim: o que caiu já aparece caído)
+
+## Fim de partida com um castelo no chão: se é a arena que está na tela, ela DESABA (arte destruída, fogo e fumaça).
+## Só visual (nada da partida).
+func _checar_ruinas(instantaneo: bool) -> void:
+	var a := _arena_vista()
+	if fim and castelo_caiu and _ruina_vista != a and float(vidas.get(a, 1.0)) <= 0.0:
+		_ruina_vista = a
+		castelo_caiu.cair(instantaneo)
 
 func para_tela(p: Vector2) -> Vector2:
 	return mundo.transform * p
@@ -467,17 +530,16 @@ func texto_fase() -> String:
 			return "Troca de papéis..."
 		if preparo > 0.0:
 			return "R%d · %s · prepare %ds" % [rodada, papel, ceili(preparo)]
-		if furia_t >= 0.0:
-			return "R%d · %s · FÚRIA x%d" % [rodada, papel, int(_mult_furia())]
-		var tc := maxi(0, ceili(tempo))
-		return "R%d · %s · %d:%02d" % [rodada, papel, tc / 60, tc % 60]
+		return "R%d · %s · %s%s" % [rodada, papel, _mmss(tempo), _txt_mare()]
 	if preparo > 0.0:
 		return "Preparo %ds" % ceili(preparo)
-	var t := maxi(0, ceili(tempo))
-	if furia_t >= 0.0:
-		var tf := int(furia_t)
-		return "FÚRIA x%d · %d:%02d" % [int(_mult_furia()), tf / 60, tf % 60]
-	return "%d:%02d" % [t / 60, t % 60]
+	return "%s%s" % [_mmss(tempo), _txt_mare()]       # (sem fim: só mostra quanto a batalha já dura)
+
+## " · MARÉ x3" / " · MORTE SÚBITA" no relógio (nada na maré 1).
+func _txt_mare() -> String:
+	if tempo >= _t_morte_subita():
+		return " · MORTE SÚBITA"
+	return " · MARÉ x%d" % mare if mare > 1 else ""
 
 func horda_restante() -> float:
 	return clampf(vidas[outro] / P.VIDA_CASTELO, 0.0, 1.0)
@@ -623,6 +685,7 @@ func colocar(lado: String, id: String, linha: int, col: int, local: bool, inv :=
 		return false
 	if not livre:
 		energias[lado] -= p.custo
+	gasto[lado] += p.custo
 	recargas[lado][id] = p.recarga
 	var x := _x_casa(lado, col, inv)
 	var u := criar_unidade(id, lado, linha, x, _nivel_tropa(lado, id, local))
@@ -635,6 +698,8 @@ func colocar(lado: String, id: String, linha: int, col: int, local: bool, inv :=
 		for k in 10:                                    # faíscas do portal (enfeite: randf, nunca o rng da partida)
 			faiscas.append({"pos": Vector2(x, C.linha_y(linha) - randf_range(20, 100)), "vel": Vector2(randf_range(-70, 70), randf_range(-80, 30)), "t": 0.0})
 	explosoes.append([Vector2(x, C.linha_y(linha) - 10), 34.0, 0.0, Color("ffe08a") if lado == "heroes" else Color("9be05a")])
+	if ("monsters" if _lado_b(x) else "heroes") == _arena_vista():   # bateu na terra da arena que está na tela: "tum"
+		Sons.tocar("Jogo/som/terra", 0.9)
 	return true
 
 # =================================================================== COMANDOS DO JOGADOR (menu do personagem)
@@ -664,7 +729,7 @@ func _comando_sim(u: Unidade, tipo: String) -> void:
 		"parar":
 			u.ordem = "parar"
 		"andar":
-			u.ordem = ""                                 # volta a marchar normalmente
+			u.ordem = "frente"                           # o JOGADOR mandou andar: vai para a frente e não volta para trás
 			u._virar(false)
 		"voltar":
 			u.ordem = "voltar"
@@ -911,8 +976,9 @@ func ferir(alvo: Unidade, valor: float, origem: Unidade = null, origem_id := "",
 func ferir_castelo(lado: String, dano: float, pos: Vector2) -> void:
 	if fim:
 		return
-	dano *= _mult_furia()                                 # FÚRIA: o castelo leva mais dano
+	dano *= _mult_castelo()                               # MARÉ alta: o castelo leva mais dano
 	vidas[lado] = maxf(0.0, vidas[lado] - dano)
+	dano_feito["monsters" if lado == "heroes" else "heroes"] += dano
 	explosoes.append([pos, 60.0, 0.0, Color("ff6b5e") if lado == lado_local else Color("ffd34d")])
 	_texto(pos + Vector2(0, -60), "-%d" % roundi(dano), Color("ff6b5e") if lado == lado_local else Color("ffd34d"))
 	if lado == _arena_vista():
@@ -1106,7 +1172,7 @@ func _passo_sim(dt: float) -> void:
 	for lado in recargas:
 		var rec: Dictionary = recargas[lado]
 		for k in rec.keys():
-			rec[k] = maxf(0.0, rec[k] - dt)
+			rec[k] = maxf(0.0, rec[k] - dt * _mare_val("recarga"))   # MARÉ alta: as cartas voltam mais rápido
 	_passo_unidades(dt)
 	_passo_bonus_nick()
 	_passo_projeteis(dt)
@@ -1114,6 +1180,18 @@ func _passo_sim(dt: float) -> void:
 	_passo_ondas(dt)
 	_passo_orbes(dt)
 	passo_n += 1
+
+## Energia do céu nas DUAS arenas (cada um pega a sua). Na MARÉ alta cai mais vezes e cada gota vale mais.
+func _passo_sol(dt: float) -> void:
+	sol_t -= dt * _mare_val("sol_ritmo")
+	if sol_t <= 0.0:
+		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
+		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
+		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
+		for par in [[xa, "heroes"], [xb, "monsters"]]:
+			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
+				"valor": P.SOL.valor + int(_mare_val("sol_extra")), "t": 0.0, "lado": par[1]})
+			prox_id_orbe += 1
 
 ## Nick: +30% de vida enquanto houver esqueleto normal inimigo de pé (PvP).
 func _passo_bonus_nick() -> void:
@@ -1134,16 +1212,7 @@ func _passo_partida(dt: float) -> void:
 	if modo == "cerco":
 		_passo_cerco(dt)
 		return
-	# energia do céu nas DUAS arenas (cada um pega a sua)
-	sol_t -= dt
-	if sol_t <= 0.0:
-		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
-		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		for par in [[xa, "heroes"], [xb, "monsters"]]:
-			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
-				"valor": P.SOL.valor, "t": 0.0, "lado": par[1]})
-			prox_id_orbe += 1
+	_passo_sol(dt)                                      # energia do céu nas DUAS arenas
 	# BOT (só quando não é online)
 	if not online():
 		var forca := _forca_bot()
@@ -1165,41 +1234,65 @@ func _passo_partida(dt: float) -> void:
 			mostrar_banner("LUTEM!\nSó vence quem derrubar o castelo inimigo!", 2.4)
 			Sons.tocar("Jogo/som/lutem", 0.9)
 		return
-	tempo -= dt
-	if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:
-		_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+	tempo += dt
+	_passo_mare(dt)
+	if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:    # SÓ VENCE QUEM DERRUBA O CASTELO (e nunca empata)
+		if vidas.heroes <= 0.0 and vidas.monsters <= 0.0:
+			_encerrar(_desempate())                        # (os dois caíram no mesmo passo: coisa rara)
+		else:
+			_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+
+## MARÉ DE GUERRA (sem relógio de fim): a cada P.MARE.a_cada segundos a batalha esquenta (mais energia, cartas
+## mais rápidas, castelo mais frágil = mais personagens na arena). Na MORTE SÚBITA o castelo mais fraco
+## desmorona sozinho — sempre termina com um castelo no chão. (Passo fixo: igual nos dois aparelhos.)
+func _passo_mare(dt: float) -> void:
+	var nova := mini(int(P.MARE.max), 1 + int(floorf(tempo / float(P.MARE.a_cada))))
+	if nova > mare:
+		mare = nova
+		var txt := "Mais energia do céu e cartas mais rápidas!\nEncha a arena!"
+		if _mult_castelo() > 1.0:
+			txt = "Os castelos levam x%s de dano!\nMande TUDO para cima do castelo!" % String.num(_mult_castelo(), 1).trim_suffix(".0")
+		mostrar_banner("⚔ MARÉ DE GUERRA x%d ⚔\n%s" % [mare, txt], 2.8)
+		Sons.tocar("Jogo/som/lutem", 0.8)
+	var ms := _t_morte_subita()
+	if tempo < ms:
 		return
-	if tempo <= 0.0:                                    # SÓ VENCE QUEM DERRUBA O CASTELO: acabou o tempo = FÚRIA
-		_passo_furia(dt)
-		if vidas.heroes <= 0.0 or vidas.monsters <= 0.0:
-			if vidas.heroes <= 0.0 and vidas.monsters <= 0.0:
-				_encerrar("")                                 # (os dois caíram no mesmo instante)
-			else:
-				_encerrar("monsters" if vidas.heroes <= 0.0 else "heroes")
+	if tempo - dt < ms:
+		mostrar_banner("☠ MORTE SÚBITA ☠\nO castelo mais fraco está DESMORONANDO!", 3.0)
+		Sons.tocar("Jogo/som/lutem", 1.0)
+	var lados: Array = [defensor]
+	if modo != "cerco":
+		var dif: float = vidas.heroes - vidas.monsters
+		lados = ["heroes", "monsters"] if absf(dif) < 0.01 else (["monsters"] if dif > 0.0 else ["heroes"])
+	for l in lados:
+		vidas[l] = maxf(0.0, vidas[l] - float(P.MARE.desmorona) * dt)
 
-## FÚRIA (o tempo acabou e nenhum castelo caiu): o dano nos castelos vai multiplicando e, depois de um tempo,
-## os dois castelos começam a desmoronar sozinhos — sempre termina com um castelo no chão. (Passo fixo.)
-func _passo_furia(dt: float) -> void:
-	if furia_t < 0.0:
-		furia_t = 0.0
-		mostrar_banner("FÚRIA!\nO tempo acabou: os castelos levam o DOBRO de dano.\nSó vence quem derrubar o castelo!", 3.2)
-		Sons.tocar("Jogo/som/lutem", 0.9)
-	var antes := _mult_furia()
-	furia_t += dt
-	if _mult_furia() > antes:
-		mostrar_banner("FÚRIA x%d!" % int(_mult_furia()), 1.6)
-	if furia_t >= float(P.FURIA.desmorona_apos):
-		if furia_t - dt < float(P.FURIA.desmorona_apos):
-			mostrar_banner("OS CASTELOS ESTÃO DESMORONANDO!", 2.4)
-		var lados := [defensor] if modo == "cerco" else ["heroes", "monsters"]
-		for l in lados:
-			vidas[l] = maxf(0.0, vidas[l] - float(P.FURIA.desmorona) * dt)
+func _t_morte_subita() -> float:
+	return float(P.MODO_CERCO.morte_subita) if modo == "cerco" else float(P.MARE.morte_subita)
 
-## Quanto o dano nos castelos multiplica agora (1 = normal; na FÚRIA: x2, x3... até o máximo).
-func _mult_furia() -> float:
-	if furia_t < 0.0:
-		return 1.0
-	return minf(float(P.FURIA.max), float(P.FURIA.dano) + floorf(furia_t / float(P.FURIA.a_cada)))
+## Valor da tabela P.MARE[chave] na maré de agora.
+func _mare_val(chave: String) -> float:
+	var tab: Array = P.MARE[chave]
+	return float(tab[clampi(mare - 1, 0, tab.size() - 1)])
+
+## Quanto o dano nos castelos multiplica agora (1 = normal; sobe nas marés altas).
+func _mult_castelo() -> float:
+	return _mare_val("dano_castelo")
+
+## SEM EMPATE: os dois castelos caíram no mesmo passo. Vence (nesta ordem) quem deu mais dano no castelo
+## do outro, quem tem mais tropas vivas; no impossível, os Heroes. (Tudo vem da partida: o mesmo nos dois aparelhos.)
+func _desempate() -> String:
+	if absf(float(dano_feito.heroes) - float(dano_feito.monsters)) > 0.001:
+		return "heroes" if float(dano_feito.heroes) > float(dano_feito.monsters) else "monsters"
+	var vivos := {"heroes": 0, "monsters": 0}
+	for par in [[herois, "heroes"], [monstros, "monsters"]]:
+		for l in par[0]:
+			for u in l:
+				if not u.morto:
+					vivos[par[1]] += 1
+	if vivos.heroes != vivos.monsters:
+		return "heroes" if vivos.heroes > vivos.monsters else "monsters"
+	return "heroes"
 
 func _passo_unidades(dt: float) -> void:
 	for r in C.G.rows:
@@ -1246,7 +1339,7 @@ func _atravessar(u: Unidade, para_x: float) -> void:
 	u.reset_physics_interpolation()                 # atravessou o portal: aparece do outro lado (sem deslizar pelo mundo)
 	u.atravessou = true
 	u.x_saida = para_x
-	if u.lado == lado_local and not espiando and not _avisou_invasao:   # 1ª vez na partida: avisa que dá para ir junto
+	if u.lado == lado_local and not espiando and not _avisou_invasao and replay.is_empty():   # 1ª vez na partida: avisa que dá para ir junto
 		_avisou_invasao = true
 		mostrar_banner("Sua tropa entrou na arena inimiga!\nToque em ESPIAR para ir junto e mandar mais tropas", 2.8)
 	_abrir_fenda(para_x + (-6.0 if _lado_b(para_x) else 6.0), u, true)   # o portal de saída abre na outra arena
@@ -1513,7 +1606,7 @@ func _passo_projeteis(dt: float) -> void:
 				if pr.fogo:
 					_acerto_fogo(pr, alvo_h)
 				if pr.tipo == "magia_sombra":
-					explosoes.append([alvo_h.position + Vector2(0, -50), 34.0, 0.0, Color("9b6bff")])
+					_impacto_magia(pr, alvo_h)
 					pr.ativo = false
 				elif pr.tipo == "energia":
 					var contato2 := Vector2(alvo_h.position.x + 12.0, alvo_h.posicao_cabeca().y)
@@ -1643,12 +1736,26 @@ func _desenhar_choques(d: Node2D) -> void:
 
 func _explodir(pr: Projetil, alvo: Unidade) -> void:
 	var centro := alvo.position + Vector2(0, -50)
-	explosoes.append([centro, pr.raio, 0.0, Color("ff8a2a") if pr.tipo == "magia_fogo" else Color("7fb6ff")])
+	_impacto_magia(pr, alvo)
 	for r in range(maxi(0, pr.linha - 1), mini(C.G.rows, pr.linha + 2)):
 		for m in monstros[r]:
 			if m != alvo and not m.morto and (m.position + Vector2(0, -50)).distance_to(centro) <= pr.raio:
 				ferir(m, pr.dano_area, null, pr.origem_id)
+				m.levar_impacto(signf(m.position.x - centro.x) if m.position.x != centro.x else signf(pr.vel), 0.45)
 	Sons.tocar(alvo.p.sons.get("impacto", "Mago/som/explosao"), 0.7)
+
+## Efeito da magia acertando o corpo (só enfeite: o FxMagia tem rng próprio, nunca o da partida):
+## estoura na FRENTE do inimigo, na altura em que a esfera voava, e ele leva o tranco para trás.
+func _impacto_magia(pr: Projetil, alvo: Unidade) -> void:
+	var dir := signf(pr.vel)
+	var ponto := Vector2(alvo.position.x - dir * 16.0, clampf(pr.pos.y, alvo.position.y - 110.0, alvo.position.y - 30.0))
+	if fx_magia:
+		fx_magia.impacto(ponto, dir, pr.raio, pr.tipo, alvo.position.y, alvo)
+	else:
+		explosoes.append([ponto, maxf(pr.raio, 34.0), 0.0, Color("7fb6ff")])
+	alvo.levar_impacto(dir, 0.85 if pr.raio > 0.0 else 0.55)
+	if pr.tipo == "magia_fogo":                       # a bola de fogo pega no inimigo: o mesmo som da flecha de fogo
+		_som_fogo(pr.origem_id)
 
 ## Impacto do laser do Engenheiro: flash branco + anel + faíscas arremessadas pra frente no ponto de contato.
 ## Determinístico (sem rng): o sim de rede compartilha o rng e não pode ganhar chamadas extras.
@@ -1814,8 +1921,11 @@ func _tiro_no_castelo(pr: Projetil, lado_c: String, x_parede: float) -> void:
 		explosoes.append([ponto, 18.0, 0.0, Color("c8b8a0")])
 	else:                                                     # magia: estoura na pedra com a cor dela
 		var cor := Color("9b6bff") if pr.tipo == "magia_sombra" else Color("7fb6ff")
-		explosoes.append([ponto, 62.0, 0.0, cor])
-		explosoes.append([ponto, 30.0, 0.0, Color(1, 1, 1)])
+		if fx_magia:
+			fx_magia.impacto(ponto, dir, 62.0, pr.tipo, ponto.y + 90.0)
+		else:
+			explosoes.append([ponto, 62.0, 0.0, cor])
+			explosoes.append([ponto, 30.0, 0.0, Color(1, 1, 1)])
 		for k in 10:
 			faiscas.append({"pos": ponto, "t": randf_range(0.0, 0.12), "raio": true, "cor": cor.lightened(0.3),
 				"vel": Vector2(-dir * randf_range(60.0, 240.0), randf_range(-240.0, 60.0))})
@@ -2158,8 +2268,7 @@ func _jogada_do_bot() -> void:
 			if not u.morto and u.p.comportamento == "gerador":
 				ger += 1
 	var gerador := _melhor(opcoes, ["gerador"])
-	var tempo_total: float = P.MODO_CERCO.tempo if modo == "cerco" else P.DURACAO
-	if gerador and ger < ger_alvo and tempo > tempo_total * 0.35 and (esperto or rng.randf() < 0.5):
+	if gerador and ger < ger_alvo and tempo < _t_morte_subita() * 0.4 and (esperto or rng.randf() < 0.5):
 		var linhas := range(C.G.rows)
 		linhas.shuffle()
 		for r in linhas:
@@ -2219,6 +2328,8 @@ func _aviso_horda(quem: String) -> void:
 
 # =================================================================== REGISTRO (painel)
 func _atividade() -> String:
+	if not replay.is_empty():
+		return "replay"
 	if online():
 		return "cerco" if modo == "cerco" else ("duelo" if rede.get("amistoso", false) else "pvp_online")
 	return "cerco" if modo == "cerco" else "pvp_bot"
@@ -2247,13 +2358,15 @@ func _preparar_rodada() -> void:
 	vidas = {"heroes": P.VIDA_CASTELO, "monsters": P.VIDA_CASTELO}
 	energias = {"heroes": float(P.ENERGIA_INICIAL), "monsters": float(P.ENERGIA_INICIAL)}
 	energias[defensor] += float(P.MODO_CERCO.energia_defesa)
+	_somar_energia_extra()
 	if not online():
 		energias[outro] += (bot_nivel - 1) * P.BOT.energia_inicial_por_nivel
 		bot_estilo = "defensor" if defensor == outro else "atacante"
 		bot_horda = 0
 	recargas = {"heroes": {}, "monsters": {}}
-	tempo = float(P.MODO_CERCO.tempo)
-	furia_t = -1.0
+	tempo = 0.0
+	mare = 1
+	gasto = {"heroes": 0.0, "monsters": 0.0}
 	preparo = float(P.MODO_CERCO.preparo)
 	sol_t = 2.0
 	bot_t = 3.0
@@ -2276,15 +2389,7 @@ func _passo_cerco(dt: float) -> void:
 			_banner_rodada()
 			Sons.tocar("Jogo/som/lutem", 0.7)
 		return
-	sol_t -= dt
-	if sol_t <= 0.0:
-		sol_t = rng.randf_range(P.SOL.cada_min, P.SOL.cada_max)
-		var xa := rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		var xb := P.MW - rng.randf_range(C.G.left + 40, C.G.left + C.G.cw * C.G.cols - 40)
-		for par in [[xa, "heroes"], [xb, "monsters"]]:
-			orbes.append({"id": prox_id_orbe, "pos": Vector2(par[0], -30), "x0": par[0], "alvo_y": rng.randf_range(C.G.top + 40, C.G.top + C.G.ch * C.G.rows - 20),
-				"valor": P.SOL.valor, "t": 0.0, "lado": par[1]})
-			prox_id_orbe += 1
+	_passo_sol(dt)
 	if not online():
 		if preparo <= 0.0 and bot_nivel > 1:
 			energias[outro] += dt * P.BOT.energia_por_segundo_por_nivel * (bot_nivel - 1)
@@ -2305,14 +2410,13 @@ func _passo_cerco(dt: float) -> void:
 			mostrar_banner("LUTEM!\n%s" % ("Segure o castelo!" if defensor == lado_local else "Derrube o castelo inimigo!"), 2.2)
 			Sons.tocar("Jogo/som/lutem", 0.9)
 		return
-	tempo -= dt
-	if tempo <= 0.0:                                    # a rodada só acaba quando o castelo CAIR: acabou o tempo = FÚRIA
-		_passo_furia(dt)
+	tempo += dt                                         # a rodada só acaba quando o castelo CAIR (sem relógio de fim)
+	_passo_mare(dt)
 	if vidas[defensor] <= 0.0:
-		_fim_rodada(float(P.MODO_CERCO.tempo) - tempo, 0.0)   # quanto o castelo aguentou (contando a fúria)
+		_fim_rodada(tempo, 0.0)                         # quanto o castelo aguentou
 
 func _fim_rodada(aguentou: float, vida: float) -> void:
-	cerco_res[defensor] = {"tempo": aguentou, "vida": vida}
+	cerco_res[defensor] = {"tempo": aguentou, "vida": vida, "passos": roundi(aguentou * 60.0), "gasto": gasto[_atacante()]}
 	if rodada == 1:
 		var eu := defensor == lado_local
 		var quem := "Você" if eu else (adversario if adversario != "" else "O adversário")
@@ -2324,9 +2428,14 @@ func _fim_rodada(aguentou: float, vida: float) -> void:
 		return
 	var h: Dictionary = cerco_res.get("heroes", {"tempo": 0.0, "vida": 0.0})
 	var m: Dictionary = cerco_res.get("monsters", {"tempo": 0.0, "vida": 0.0})
-	var v := ""                                         # vence quem DERRUBOU o castelo do outro mais rápido
-	if absf(float(h.tempo) - float(m.tempo)) > 0.05:    # (= o castelo dele aguentou mais tempo)
-		v = "heroes" if float(h.tempo) > float(m.tempo) else "monsters"
+	# vence quem DERRUBOU o castelo do outro mais rápido (= o castelo dele aguentou mais tempo). SEM EMPATE:
+	# mesmo passo -> quem gastou menos energia atacando; nem isso -> quem atacou primeiro (às cegas, sem saber a marca).
+	var v := str(P.MODO_CERCO.primeiro_defende)
+	v = "monsters" if v == "heroes" else "heroes"
+	if int(h.get("passos", 0)) != int(m.get("passos", 0)):
+		v = "heroes" if int(h.get("passos", 0)) > int(m.get("passos", 0)) else "monsters"
+	elif absf(float(h.get("gasto", 0.0)) - float(m.get("gasto", 0.0))) > 0.001:
+		v = "heroes" if float(h.get("gasto", 0.0)) > float(m.get("gasto", 0.0)) else "monsters"   # (h.gasto = o que os Monsters gastaram atacando)
 	_encerrar(v)
 
 func _limpar_campo() -> void:
@@ -2339,7 +2448,7 @@ func _limpar_campo() -> void:
 		pr.ativo = false
 	ondas.clear(); orbes.clear(); voos.clear(); fendas.clear()
 	carta_sel = -1
-	if espiando:
+	if espiando and replay.is_empty():              # (REPLAY: fica na arena que a pessoa escolheu)
 		espiar_t = 0.0
 		_trocar_vista(false)
 
@@ -2388,6 +2497,257 @@ func _jogada_bot_defesa(opcoes: Array, est: Dictionary, esperto: bool) -> void:
 	if e:
 		_colocar_bot(e, linha, true)
 
+## ENERGIA EXTRA do painel (37_painel_admin.sql): a mais (ou a menos) no começo da partida / rodada.
+## Online e replay: o número de cada lado vem da sala (igual nos dois aparelhos). Contra o bot: só o seu.
+func _somar_energia_extra() -> void:
+	for l in ["heroes", "monsters"]:
+		var extra := 0
+		if online():
+			extra = int((rede.get("energia", {}) as Dictionary).get(l, 0))
+		elif l == lado_local and not campeonato:
+			extra = Perfil.energia_extra
+		energias[l] = maxf(50.0, energias[l] + float(extra))
+
+# =================================================================== REPLAY (36_replays.sql)
+## Fim da partida online: manda a "receita" para o servidor (o primeiro dos dois aparelhos que mandar fica).
+func _guardar_replay(v: String) -> void:
+	if rede.is_empty() or str(rede.get("sala", "")) == "":
+		return
+	var dados := {"v": 1, "semente": semente, "modo": modo, "niveis": rede.get("niveis", {}), "nomes": rede.get("nomes", {}),
+		"amistoso": rede.get("amistoso", false), "energia": rede.get("energia", {}), "passos": passo_n, "vencedor": v, "wo": rede.get("wo", false),
+		"foto": foto_da_partida(), "acoes": replay_acoes}
+	ultimo_replay = dados
+	Conta.chamar("guardar_replay", {"p_sala": rede.sala, "p_dados": dados})   # (sem esperar)
+
+## Abriu um replay: a partida roda como a online (mesma semente, mesmas jogadas), só que ninguém joga.
+func _preparar_replay(d: Dictionary) -> void:
+	replay = d
+	assistindo = true
+	lado_local = str(d.get("lado_ver", "heroes")) if str(d.get("lado_ver", "")) in ["heroes", "monsters"] else "heroes"
+	var o := "monsters" if lado_local == "heroes" else "heroes"
+	semente = int(d.get("semente", 0))
+	modo = "cerco" if str(d.get("modo", "normal")) == "cerco" else "normal"
+	var nomes: Dictionary = d.get("nomes", {}) if d.get("nomes") is Dictionary else {}
+	adversario = str(nomes.get(o, "")) if str(nomes.get(o, "")) != "" else "Adversário"
+	var nv: Dictionary = d.get("niveis", {}) if d.get("niveis") is Dictionary else {}
+	rede = {"sala": "", "lado_outro": o, "recebidos": {}, "enviados": {}, "minhas": [], "esperando_desde": 0, "pediu_em": 0,
+		"saiu": false, "wo": false, "finalizando": false, "conectou": true, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
+		"niveis": {"heroes": nv.get("heroes", {}), "monsters": nv.get("monsters", {})}, "nomes": nomes,
+		"amistoso": d.get("amistoso", false) == true, "replay": true,
+		"energia": d.get("energia", {}) if d.get("energia") is Dictionary else {}}
+
+func _iniciar_replay() -> void:
+	escolhendo = false
+	hud.visible = false                                # REPLAY: sem painel de energia nem cartas (só a barra do replay)
+	_recomecar_replay()
+	barra_replay = Control.new()
+	barra_replay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	barra_replay.size = Vector2(C.W, C.H)
+	barra_replay.draw.connect(_desenhar_barra_replay)
+	ui.add_child(barra_replay)
+	var nomes: Dictionary = rede.get("nomes", {})
+	mostrar_banner("▶ REPLAY\n%s (Heroes) x %s (Monsters)\nArraste a barra para ir a qualquer momento · VER ARENA troca de arena · toque na tela: 1x / 2x / 4x" % [
+		str(nomes.get("heroes", "Heroes")), str(nomes.get("monsters", "Monsters"))], 4.0)
+
+## Volta a partida para o começo (com todas as jogadas guardadas de novo).
+func _recomecar_replay() -> void:
+	var vista := espiando
+	comecar()
+	if vista != espiando:
+		espiando = vista
+		_aplicar_vista()
+	for a in replay.get("acoes", []):
+		if a is Dictionary:
+			var b: Dictionary = a.duplicate()
+			b.passo = int(b.get("passo", 0))
+			b.seq = int(b.get("seq", 0))
+			b.lado = str(b.get("lado", ""))
+			fila_acoes.append(b)
+
+func _total_replay() -> int:
+	return maxi(1, int(replay.get("passos", 1)))
+
+## BARRA: ir para o passo "alvo". Para trás = recomeça do zero e corre até lá (a partida é sempre igual);
+## para frente = corre daqui até lá. Correndo, o som fica mudo e a tela mostra "Indo para...".
+func _ir_para_replay(alvo: int) -> void:
+	alvo = clampi(alvo, 0, _total_replay())
+	if alvo >= _total_replay():
+		alvo = _total_replay() + 1                     # (o fim: o castelo cai DENTRO do último passo)
+	if alvo < passo_n or fim:
+		_recomecar_replay()
+	replay_alvo = alvo
+	AudioServer.set_bus_mute(0, true)
+
+func _correr_replay() -> void:
+	var n := 0
+	while passo_n < replay_alvo and not fim and n < REPLAY_PASSOS_POR_QUADRO:
+		_passo_sim(PASSO)
+		n += 1
+	if passo_n >= replay_alvo or fim:
+		replay_alvo = -1
+		acumulado = 0.0
+		AudioServer.set_bus_mute(0, false)
+		textos.clear()
+		explosoes.clear()
+
+func _ret_barra_replay() -> Rect2:
+	return Rect2(250, C.H - 40, C.W - 250 - 316, 12)
+
+## Botão ← VOLTAR (sai do replay e volta para a lista de onde a pessoa veio).
+func _ret_voltar_replay() -> Rect2:
+	return Rect2(16, C.H - 62, 110, 52)
+
+## Botão de TROCAR DE ARENA: ver a arena dos Heroes ou a dos Monsters (qualquer momento, sem precisar de tropa lá).
+func _ret_arena_replay() -> Rect2:
+	return Rect2(C.W - 232, C.H - 62, 222, 52)
+
+## Qual arena o botão mostra se tocar (a que NÃO está na tela agora).
+func _arena_do_botao_replay() -> String:
+	return "monsters" if _arena_vista() == "heroes" else "heroes"
+
+func _trocar_arena_replay() -> void:
+	_trocar_vista(not espiando)
+	Sons.tocar("Jogo/som/portal", 0.35)
+	var nomes: Dictionary = rede.get("nomes", {})
+	var a := _arena_vista()
+	var quem := str(nomes.get(a, ""))
+	mostrar_banner("Arena dos %s%s" % ["Heroes" if a == "heroes" else "Monsters", (" · " + quem) if quem != "" else ""], 1.4)
+
+func _botao_replay(b: Control, r: Rect2, txt: String, cor: Color, borda: Color) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = cor
+	sb.border_color = borda
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(16)
+	b.draw_style_box(sb, r)
+	var linhas := txt.split("\n")
+	var tam := 17
+	for l in linhas:
+		while tam > 11 and f_titulo.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x > r.size.x - 14:
+			tam -= 1
+	var y0 := r.get_center().y - (linhas.size() - 1) * (tam + 2) / 2.0 + tam * 0.36
+	for i in linhas.size():
+		var pos := Vector2(r.position.x, y0 + i * (tam + 2))
+		b.draw_string_outline(f_titulo, pos, linhas[i], HORIZONTAL_ALIGNMENT_CENTER, r.size.x, tam, 6, Color("120c04"))
+		b.draw_string(f_titulo, pos, linhas[i], HORIZONTAL_ALIGNMENT_CENTER, r.size.x, tam, Color.WHITE)
+
+func _passo_da_barra(x: float) -> int:
+	var r := _ret_barra_replay()
+	return roundi(clampf((x - r.position.x) / r.size.x, 0.0, 1.0) * _total_replay())
+
+func _desenhar_barra_replay() -> void:
+	var b := barra_replay
+	var r := _ret_barra_replay()
+	var total := _total_replay()
+	var agora := replay_arrasto if replay_arrasto >= 0 else (replay_alvo if replay_alvo >= 0 else passo_n)
+	var k := clampf(float(agora) / float(total), 0.0, 1.0)
+	var fundo_r := Rect2(6, C.H - 70, C.W - 12, 66)                # (no replay o HUD fica escondido: a barra ocupa a faixa toda)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.04, 0.1, 0.96)
+	sb.border_color = Color("2fd15a")
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(20)
+	b.draw_style_box(sb, fundo_r)
+	var trilho := StyleBoxFlat.new()
+	trilho.bg_color = Color(1, 1, 1, 0.18)
+	trilho.set_corner_radius_all(6)
+	b.draw_style_box(trilho, r)
+	if k > 0.0:
+		var cheio := StyleBoxFlat.new()
+		cheio.bg_color = Color("2fd15a")
+		cheio.set_corner_radius_all(6)
+		b.draw_style_box(cheio, Rect2(r.position, Vector2(r.size.x * k, r.size.y)))
+	var bola := Vector2(r.position.x + r.size.x * k, r.get_center().y)
+	b.draw_circle(bola, 15 if replay_arrasto >= 0 else 12, Color("120c04"))
+	b.draw_circle(bola, 12 if replay_arrasto >= 0 else 9, Color.WHITE)
+	var txt_t := "%s / %s" % [_mmss(agora / 60.0), _mmss(total / 60.0)]
+	b.draw_string_outline(f_titulo, Vector2(136, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(136, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+	_botao_replay(b, _ret_voltar_replay(), "← VOLTAR", Color("4a5fae"), Color("aebcff"))
+	var a := _arena_do_botao_replay()
+	var nomes: Dictionary = rede.get("nomes", {})
+	var quem := str(nomes.get(a, ""))
+	_botao_replay(b, _ret_arena_replay(), "VER ARENA %s%s" % ["HEROES" if a == "heroes" else "MONSTERS", ("\n" + quem) if quem != "" else ""],
+		Color("c96a12") if a == "heroes" else Color("2f8a3c"), Color("ffd08a") if a == "heroes" else Color("b8f5a8"))
+	var txt_v := "⏩" if replay_alvo >= 0 else "%dx" % replay_vel
+	b.draw_string_outline(f_titulo, Vector2(r.end.x + 16, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(r.end.x + 16, r.position.y + 13), txt_v, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("ffd34d"))
+
+## Toques no replay: arrastar na barra (embaixo) = ir para aquele momento; tocar no resto = velocidade.
+func _toque_replay(ev: InputEvent) -> void:
+	if barra_replay == null:
+		return
+	var apertou: bool = (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and ev.pressed) or (ev is InputEventScreenTouch and ev.pressed)
+	var soltou: bool = (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and not ev.pressed) or (ev is InputEventScreenTouch and not ev.pressed)
+	var moveu: bool = ev is InputEventMouseMotion or ev is InputEventScreenDrag
+	if ev is InputEventMouseButton and ev.device == InputEvent.DEVICE_ID_EMULATION:
+		return                                       # (o toque do celular já chega como ScreenTouch)
+	if not (apertou or soltou or moveu):
+		return
+	var pos: Vector2 = barra_replay.make_input_local(ev).position
+	var area := _ret_barra_replay().grow_individual(16, 34, 16, 40)
+	if apertou and not (painel and painel.visible):
+		if _ret_voltar_replay().grow(6).has_point(pos):
+			Sons.tocar("Jogo/som/clique", 0.5)
+			_ir_menu()
+			return
+		if _ret_arena_replay().grow(6).has_point(pos):
+			_trocar_arena_replay()
+			return
+	if apertou:
+		if area.has_point(pos):
+			replay_arrasto = _passo_da_barra(pos.x)
+		elif not (painel and painel.visible) and replay_alvo < 0:
+			replay_vel = 2 if replay_vel == 1 else (4 if replay_vel == 2 else 1)
+			mostrar_banner("REPLAY · velocidade %dx" % replay_vel, 1.2)
+	elif moveu and replay_arrasto >= 0:
+		replay_arrasto = _passo_da_barra(pos.x)
+	elif soltou and replay_arrasto >= 0:
+		var alvo := _passo_da_barra(pos.x)
+		replay_arrasto = -1
+		_ir_para_replay(alvo)
+
+func _passo_replay(dt: float) -> void:
+	if barra_replay:
+		barra_replay.queue_redraw()
+	if replay_arrasto >= 0:
+		return                                       # (arrastando a barra: a partida espera)
+	if replay_alvo >= 0:
+		_correr_replay()
+		return
+	acumulado = minf(acumulado + dt * replay_vel, 0.25 * replay_vel)
+	var n := 0
+	while acumulado >= PASSO and n < 8 * replay_vel and not fim:
+		_passo_sim(PASSO)
+		acumulado -= PASSO
+		n += 1
+		if not fim and passo_n >= int(replay.get("passos", 0)) + 30:   # (W.O.: a partida parou antes de um castelo cair)
+			_fim_replay(str(replay.get("vencedor", "")))
+
+func _fim_replay(v: String) -> void:
+	if fim and painel.visible:
+		return
+	if replay_alvo >= 0:                               # (arrastou a barra até o fim: terminou de correr)
+		replay_alvo = -1
+		AudioServer.set_bus_mute(0, false)
+	fim = true
+	vencedor = v
+	replay_foto = foto_da_partida()
+	if replay_foto != str(replay.get("foto", replay_foto)) and replay.get("wo", false) != true:
+		Conta.registrar("replay_diferente", {"passos": passo_n, "esperado": replay.get("passos", 0)})   # (painel: para conferir)
+	var nomes: Dictionary = rede.get("nomes", {})
+	var quem := str(nomes.get(v, "")) if v in ["heroes", "monsters"] else ""
+	painel_titulo = "FIM DO REPLAY"
+	painel_texto = ("%s venceu de %s!" % [quem, "Heroes" if v == "heroes" else "Monsters"]) if quem != "" else "Fim da partida."
+	if replay.get("wo", false) == true:
+		painel_texto += "\n(o outro saiu da partida)"
+	_abrir_painel([["Ver de novo", Color("ffc43a"), _replay_de_novo], ["Voltar", Color("4a5fae"), _ir_menu]])
+
+func _replay_de_novo() -> void:
+	Perfil.pvp_replay = replay
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+
 # =================================================================== ONLINE (lockstep)
 func online() -> bool:
 	return not rede.is_empty()
@@ -2406,6 +2766,10 @@ func _preparar_online(sala: Dictionary) -> void:
 		"esperando_desde": 0, "pediu_em": 0, "saiu": false, "wo": false, "finalizando": false,
 		"conectou": false, "inicio": Time.get_ticks_msec(), "espiar_pedido": false,
 		"niveis": {"heroes": nh if nh is Dictionary else {}, "monsters": nm if nm is Dictionary else {}}}
+	rede["energia"] = {"heroes": int(sala.get("energia_heroes", 0)) if sala.get("energia_heroes") != null else 0,
+		"monsters": int(sala.get("energia_monsters", 0)) if sala.get("energia_monsters") != null else 0}
+	rede["nomes"] = {"heroes": str(sala.get("nome_heroes", "")) if sala.get("nome_heroes") != null else "",
+		"monsters": str(sala.get("nome_monsters", "")) if sala.get("nome_monsters") != null else ""}
 	rede["amistoso"] = sala.get("amistoso", false) == true      # DUELO entre amigos: não vale troféu
 	modo = "cerco" if str(sala.get("modo", "normal")) == "cerco" else "normal"   # (19_cerco.sql)
 	rede["aposta_moedas"] = int(sala.get("aposta_moedas", 0)) if sala.get("aposta_moedas") != null else 0
@@ -2573,6 +2937,8 @@ func _aplicar_acoes_do_passo() -> void:
 			return a.lado == "heroes"
 		return a.seq < b.seq)
 	for a in agora:
+		if online() and replay.is_empty():            # REPLAY: guarda tudo o que aconteceu (dos dois lados)
+			replay_acoes.append(a.duplicate())
 		_aplicar_acao(a)
 
 func _aplicar_acao(a: Dictionary) -> void:
@@ -2595,7 +2961,7 @@ func _aplicar_acao(a: Dictionary) -> void:
 				rede.espiar_pedido = false
 			if energias[lado] >= custo_espiar():
 				energias[lado] -= custo_espiar()
-				if lado == lado_local:
+				if lado == lado_local and replay.is_empty():
 					espiar_t = C.ESPIAR_DURACAO
 					_trocar_vista(true)
 
@@ -2631,6 +2997,7 @@ func _encerrar_online(v: String, wo := false) -> void:
 	carta_sel = -1
 	rede.wo = wo
 	rede.finalizando = true
+	_guardar_replay(v)
 	var venceu := v == lado_local
 	var empate := v == ""
 	_registrar_cartas(venceu)
@@ -2749,12 +3116,15 @@ func _mostrar_fim_online(sala: Dictionary) -> void:
 	var amistoso: bool = rede.get("amistoso", false)
 	var am: int = rede.get("aposta_moedas", 0)
 	var at: int = rede.get("aposta_trofeus", 0)
+	var sem_trofeus: bool = serie.get("sem_trofeus", false) == true   # MESMA INTERNET (35_mesmo_ip.sql): não pagou nada
 	var deltas := {}
 	for j in r.dados:
 		var lado_j := str(j.get("lado", ""))
 		var dm := 0
 		var dtf := 0
-		if amistoso:
+		if sem_trofeus:
+			pass
+		elif amistoso:
 			if vl != "":
 				dm = am if lado_j == vl else -am
 				dtf = at if lado_j == vl else -at
@@ -2804,6 +3174,9 @@ func _desistir_online() -> void:
 
 # =================================================================== FIM
 func _encerrar(v: String) -> void:
+	if not replay.is_empty():
+		_fim_replay(v)
+		return
 	if online():
 		_encerrar_online(v)
 		return
@@ -2817,11 +3190,14 @@ func _encerrar(v: String) -> void:
 	if campeonato:
 		_encerrar_campeonato(venceu, empate, minha, deles)
 		return
-	# moedas (contra o bot não vale troféu)
+	# moedas (a cada partida; os troféus da série contra o bot saem no fim da série)
 	var tab: Dictionary = P.MODO_CERCO.moedas if modo == "cerco" else P.MOEDAS
 	var base: int = tab.vitoria if venceu else (tab.empate if empate else tab.derrota)
 	var g: Dictionary = Perfil.ganhar_moedas(base, lado_local)    # +50% no lado em alta; +150 se jogou os dois lados hoje
 	var ganho: int = g.ganho + g.duplo
+	if serie_bot:
+		_fim_partida_serie_bot(venceu, ganho, minha, deles)
+		return
 	# BOT_DIFICULDADE: vitória = bot mais difícil na próxima; derrota = mais fácil
 	var nivel_antes := bot_nivel
 	if not empate and modo != "cerco":                  # (o Cerco não mexe no nível do bot)
@@ -2836,13 +3212,146 @@ func _encerrar(v: String) -> void:
 	if modo == "cerco":
 		painel_titulo = ("CERCO: " + painel_titulo) if not empate else "CERCO: EMPATE"
 		painel_texto = "%s\n+%d moedas" % [_resumo_cerco(), ganho]
-	if adversario == "" and bot_nivel != nivel_antes:
-		painel_texto += ("\nSeus próximos adversários ficaram mais fortes: nível %d (%s)!" if bot_nivel > nivel_antes else "\nSeus próximos adversários: nível %d (%s).") % [bot_nivel, P.nome_nivel_bot(bot_nivel)]
 	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
 	if venceu:
 		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
 	elif not empate:
 		Sons.tocar("Castelo/som/caiu", 1.0)
+
+const TXT_TROFEU_BOT := "Somando os troféus..."
+
+# =================================================================== SÉRIE CONTRA O BOT
+## Igual à série online (28_serie_pvp.sql): partida 1 no seu lado, partida 2 com os lados TROCADOS e, se ficar
+## 1 x 1, a partida 3 de desempate com o lado sorteado. O bot é o MESMO a série toda (nível e nome).
+## Fim da série: troféus para quem venceu (pela dificuldade do bot) e a próxima dificuldade:
+## venceu = sobe uma (Fácil -> Médio -> Difícil -> HardCore); perdeu = volta uma.
+func _iniciar_serie_bot() -> void:
+	serie_bot = true
+	var s: Dictionary = Perfil.serie_bot
+	if s.get("continua", false):                         # partida 2 ou 3 da mesma série
+		s["continua"] = false
+		bot_nivel = int(s.nivel)
+		adversario = str(s.adversario)
+		return
+	Perfil.serie_bot = {"jogo": 1, "meus": 0, "dele": 0, "nivel": bot_nivel, "lado_original": lado_local,
+		"adversario": adversario, "continua": false}
+
+func _texto_serie_bot() -> String:
+	var s: Dictionary = Perfil.serie_bot
+	var j := int(s.get("jogo", 1))
+	var qual := "Partida %d de 2" % j if j <= 2 else "DESEMPATE (partida 3)"
+	var nome := adversario if adversario != "" else "Adversário"
+	return "%s · Você %d x %d %s · Vença de Heroes E de Monsters" % [qual, int(s.get("meus", 0)), int(s.get("dele", 0)), nome]
+
+func _fim_partida_serie_bot(venceu: bool, ganho: int, minha: float, deles: float) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	var jogo := int(s.jogo)
+	if venceu:
+		s["meus"] = int(s.meus) + 1
+	else:
+		s["dele"] = int(s.dele) + 1
+	_registrar_cartas(venceu)
+	Conta.registrar("pvp_bot", {"lado": lado_local, "venceu": venceu, "empate": false, "bot_nivel": bot_nivel,
+		"castelo": ceili(minha), "castelo_inimigo": ceili(deles), "modo": modo, "serie_jogo": jogo})
+	var acabou := jogo >= 3 or (jogo == 2 and (int(s.meus) == 2 or int(s.dele) == 2))
+	if acabou:
+		_fim_serie_bot(int(s.meus) > int(s.dele), ganho)
+		return
+	s["jogo"] = jogo + 1
+	var proximo := ("monsters" if lado_local == "heroes" else "heroes") if jogo == 1 else ("heroes" if randf() < 0.5 else "monsters")
+	if venceu:
+		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
+	else:
+		Sons.tocar("Castelo/som/caiu", 1.0)
+	var tela = preload("res://scripts/pvp/serie_intervalo.gd").new()
+	tela.f_titulo = f_titulo
+	tela.f_texto = f_texto
+	tela.bot = true
+	tela.venci_partida = venceu
+	tela.jogo_que_acabou = jogo
+	tela.meus_pontos = int(s.meus)
+	tela.pontos_dele = int(s.dele)
+	tela.nome_dele = adversario if adversario != "" else "Adversário"
+	tela.proxima = {"jogo": jogo + 1}
+	tela.proximo_lado = proximo
+	tela.ao_entrar = _proxima_partida_serie_bot
+	tela.ao_sair = _ir_menu                              # sair no intervalo = perde a série
+	painel.visible = false
+	ui.visible = false
+	camada_painel.add_child(tela)
+
+## Entra na próxima partida da série (a cena recarrega com o outro lado).
+func _proxima_partida_serie_bot(lado: String) -> void:
+	Perfil.serie_bot["continua"] = true
+	Perfil.lado = lado
+	Perfil.pvp_adversario = adversario
+	Perfil.pvp_modo = "normal"
+	Perfil.pvp_sala = {}
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+
+## Acabou a série: volta o seu lado, troféus (se venceu) e a dificuldade do próximo bot.
+func _fim_serie_bot(venceu_serie: bool, ganho: int) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	var nivel_antes := int(s.nivel)
+	_fechar_serie_bot(venceu_serie)
+	var placar := "Série %d x %d" % [int(s.meus), int(s.dele)]
+	if venceu_serie:
+		placar += " · você venceu de Heroes e de Monsters!" if int(s.dele) == 0 else " · você venceu o desempate!"
+	else:
+		placar += " · %s venceu a série" % (adversario if adversario != "" else "o adversário")
+	painel_titulo = "VENCEU A SÉRIE!" if venceu_serie else "PERDEU A SÉRIE"
+	painel_texto = "%s\n+%d moedas" % [placar, ganho]
+	if venceu_serie:
+		painel_texto += "\n" + TXT_TROFEU_BOT
+		_premio_trofeus_bot(nivel_antes)
+	_abrir_painel([["Jogar de novo", Color("ffc43a"), _jogar_de_novo], ["Menu", Color("4a5fae"), _ir_menu]])
+	if venceu_serie:
+		Sons.tocar("Jogo/som/proximo_nivel", 0.9)
+	else:
+		Sons.tocar("Castelo/som/caiu", 1.0)
+
+## Fecha a série: o seu lado de antes volta e o próximo bot sobe (venceu) ou desce (perdeu) uma dificuldade.
+func _fechar_serie_bot(venceu_serie: bool) -> void:
+	var s: Dictionary = Perfil.serie_bot
+	if s.is_empty():
+		return
+	bot_nivel = P.proximo_nivel_bot(int(s.nivel), venceu_serie)
+	Perfil.bot_nivel = bot_nivel
+	Perfil.lado = str(s.get("lado_original", Perfil.lado))
+	Perfil.serie_bot = {}
+	Perfil.salvar()
+
+## Venceu o bot na Batalha: troféus pela dificuldade dele, até o limite do dia (ConfigPvp.TROFEUS_BOT).
+## Com conta o servidor confere e soma (34_trofeus_bot.sql); convidado soma no aparelho.
+func _premio_trofeus_bot(nivel: int) -> void:
+	var ganho := 0
+	var hoje := 0
+	var limite := int(P.TROFEUS_BOT.dia)
+	var linha := ""
+	if Perfil.com_conta() and Conta.logado():
+		var r: Dictionary = await Conta.chamar("trofeus_contra_bot", {"p_nivel": nivel})
+		if not is_inside_tree():
+			return
+		if r.ok and r.dados is Dictionary:
+			Perfil.de_servidor(r.dados)
+			Conta.mudou.emit()
+			ganho = int(r.dados.get("ganho_bot", 0))
+			hoje = int(r.dados.get("hoje_bot", 0))
+			limite = int(r.dados.get("limite_bot", limite))
+		else:
+			linha = "(Sem internet: os troféus não foram somados.)"
+	else:
+		var g: Array = Perfil.ganhar_trofeus_bot(P.trofeus_bot(nivel), limite)
+		ganho = g[0]
+		hoje = g[1]
+	if linha == "":
+		if ganho > 0:
+			linha = "+%d troféus" % ganho
+		elif hoje >= limite:
+			linha = "Você já ganhou o máximo de troféus de hoje. Volte amanhã!"
+	painel_texto = painel_texto.replace("\n" + TXT_TROFEU_BOT, ("\n" + linha) if linha != "" else "")
+	painel.queue_redraw()
 
 ## Fim de uma luta do CAMPEONATO: vence quem derrubou o castelo (os dois caindo juntos, coisa rara, conta como derrota).
 ## Não mexe no nível do bot do PvP normal. Prêmio em moedas por fase vencida.
@@ -2875,12 +3384,24 @@ func _ir_campeonato() -> void:
 	get_tree().change_scene_to_file("res://cenas/campeonato.tscn")
 
 func _jogar_de_novo() -> void:
-	adversario = ""                                     # na revanche é o bot de verdade (com o nível dele)
+	if serie_bot:                                       # nova série (a cena recarrega no seu lado de sempre)
+		Perfil.serie_bot = {}
+		Perfil.pvp_adversario = ""
+		Perfil.pvp_modo = "normal"
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://cenas/pvp.tscn")
+		return
+	adversario = P.nome_adversario()                   # revanche: outro "jogador"
 	_fechar_painel()
 	escolhendo = true                                   # escolhe as cartas de novo antes da nova partida
 	selecao.abrir(cartas_todas)
 
 func _ir_menu() -> void:
+	if not replay.is_empty():                          # REPLAY: volta para a lista de replays
+		AudioServer.set_bus_mute(0, false)
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://cenas/replays.tscn")
+		return
 	if not fim and _t_partida > 5.0:                    # saiu no meio da partida
 		Conta.registrar("desistiu", {"modo": _atividade(), "minuto": snappedf(_t_partida / 60.0, 0.1), "rodada": rodada if modo == "cerco" else 0})
 	if campeonato:                                     # saiu da luta do campeonato no meio: conta como derrota
@@ -2888,12 +3409,17 @@ func _ir_menu() -> void:
 			Campeonato.desistiu()
 		_ir_campeonato()
 		return
+	if serie_bot and not Perfil.serie_bot.is_empty():  # saiu no meio da série contra o bot = perdeu a série
+		_fechar_serie_bot(false)
 	Conta.estou("menu")
 	get_tree().paused = false
 	Perfil.pvp_adversario = ""
 	get_tree().change_scene_to_file("res://cenas/intro.tscn")
 
 func _pausar() -> void:
+	if not replay.is_empty():                          # REPLAY: voltar sai
+		_ir_menu()
+		return
 	if fim or painel.visible or escolhendo:
 		return
 	if online():                                       # ONLINE: a partida não para (o outro continua jogando)
@@ -2991,7 +3517,12 @@ func _desenhar_painel() -> void:
 
 # =================================================================== QUADRO (efeitos e desenho)
 func _process(dt: float) -> void:
-	if online() and not fim and not escolhendo:
+	if not replay.is_empty():
+		if not fim or replay_alvo >= 0 or replay_arrasto >= 0:
+			_passo_replay(dt)
+		elif barra_replay:
+			barra_replay.queue_redraw()
+	elif online() and not fim and not escolhendo:
 		_passo_online(dt)
 	for tx in textos:
 		tx.t += dt
@@ -3063,7 +3594,7 @@ func _process(dt: float) -> void:
 			energias[lado_local] += v.valor          # (online o valor é 0: a energia já entrou no passo da partida)
 			voos.remove_at(i)
 		i -= 1
-	if espiando and not get_tree().paused and tropas_na_arena_inimiga() == 0:   # suas tropas de lá caíram: volta sozinho
+	if espiando and replay.is_empty() and not get_tree().paused and tropas_na_arena_inimiga() == 0:   # suas tropas de lá caíram: volta sozinho
 		_trocar_vista(false)
 		if not fim:
 			mostrar_banner("Suas tropas caíram\nde volta à sua arena", 2.2)
@@ -3073,6 +3604,8 @@ func _process(dt: float) -> void:
 		lbl_banner.visible = banner_t > 0.0
 	if mostrar_fps:
 		lbl_fps.text = "%d fps" % Engine.get_frames_per_second()
+	if fim:
+		_checar_ruinas(false)
 	desenho.queue_redraw()
 	for n_l in _chao_linhas:
 		n_l.queue_redraw()
@@ -3147,13 +3680,14 @@ func _desenhar() -> void:
 				d.draw_circle(pr.origem, 8.0 * pulso_cano * alfa + 1.0, Color("7ff7ff", 0.7 * alfa))
 				d.draw_circle(pr.origem, 4.0 * alfa + 1.0, Color.WHITE, alfa)
 			_:
-				var cor := Color("7fb6ff")
-				if pr.tipo == "magia_fogo": cor = Color("ff8a2a")
-				elif pr.tipo == "magia_sombra": cor = Color("9b6bff")
-				var pulso := 1.0 + 0.15 * sin(pr.t * 20.0)
-				d.draw_circle(pr.pos, 16.0 * pulso, Color(cor, 0.25))
-				d.draw_circle(pr.pos, 9.0 * pulso, cor)
-				d.draw_circle(pr.pos, 4.0, Color.WHITE)
+				if not (FxMagia.eh_magia(pr.tipo) and fx_magia):   # (a esfera da magia é desenhada no fx_magia, com luz aditiva)
+					var cor := Color("7fb6ff")
+					if pr.tipo == "magia_fogo": cor = Color("ff8a2a")
+					elif pr.tipo == "magia_sombra": cor = Color("9b6bff")
+					var pulso := 1.0 + 0.15 * sin(pr.t * 20.0)
+					d.draw_circle(pr.pos, 16.0 * pulso, Color(cor, 0.25))
+					d.draw_circle(pr.pos, 9.0 * pulso, cor)
+					d.draw_circle(pr.pos, 4.0, Color.WHITE)
 	# (as ondas de terra / ossos / fogo são desenhadas em _desenhar_ondas_linha: na ordem de profundidade)
 	for e in explosoes:
 		var kk: float = e[2] / 0.4
@@ -3267,9 +3801,9 @@ func _desenhar() -> void:
 			d.draw_circle(f.pos, 1.6 * ta + 0.3, Color(Color.WHITE.lerp(cf, 0.35 if f.has("cor") else 0.0), 0.95 * ta))
 		else:
 			d.draw_circle(f.pos, 2.5, Color(1, 1, 1, 1.0 - f.t / 0.5))
-	# energia (só a sua aparece)
+	# energia (só a sua aparece; no REPLAY nenhuma)
 	for o in orbes:
-		if o.lado == lado_local and not o.get("pega_local", false) and C.energia_visivel(o.t, tempo_s):
+		if replay.is_empty() and o.lado == lado_local and not o.get("pega_local", false) and C.energia_visivel(o.t, tempo_s):
 			hud.icone_energia(d, o.pos, 21.0 * (1.0 + 0.06 * sin(tempo_s * 6.0)))
 	# textos de dano (sem espelhar)
 	for tx in textos:
@@ -3315,12 +3849,12 @@ func _desenhar_tela() -> void:
 			d.draw_string_outline(f_titulo, tx.pos - Vector2(80, 0), tx.txt, HORIZONTAL_ALIGNMENT_CENTER, 160, 20, 5, Color(0, 0, 0, al))
 			d.draw_string(f_titulo, tx.pos - Vector2(80, 0), tx.txt, HORIZONTAL_ALIGNMENT_CENTER, 160, 20, Color(tx.cor, al))
 	var alvo: Vector2 = hud.alvo_energia()
-	for v in voos:
+	for v in (voos if replay.is_empty() else []):
 		var k2: float = v.t / 0.45
 		var e := 1.0 - pow(1.0 - k2, 3.0)
 		var pos: Vector2 = v.de.lerp(alvo, e) - Vector2(0, sin(k2 * PI) * 60.0)
 		hud.icone_energia(d, pos, 18.0 * (1.0 - k2 * 0.3))
-	if online():                                       # ONLINE: tropa que você mandou e ainda vai aparecer (0,5 s)
+	if online() and replay.is_empty():                 # ONLINE: tropa que você mandou e ainda vai aparecer (0,5 s)
 		for ac in fila_acoes:
 			if ac.lado != lado_local or ac.tipo != "colocar" or bool(ac.get("inv", false)) != espiando:
 				continue
@@ -3365,6 +3899,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 			_continuar()
 		else:
 			_pausar()
+		return
+	if not replay.is_empty():                          # REPLAY: barra para arrastar e toque = velocidade
+		_toque_replay(ev)
 		return
 	var pos := C.pos_toque(self, ev)
 	if not pos.is_finite() or fim or (painel and painel.visible):
@@ -3422,7 +3959,7 @@ func foto_ao_vivo() -> Dictionary:
 					u.append([x.linha, roundi(x.position.x), 0 if x.lado == "heroes" else 1, x.p.id, roundi(100.0 * x.vida / maxf(1.0, x.vida_max))])
 	return {"m": "cerco" if modo == "cerco" else ("campeonato" if campeonato else "pvp"), "w": P.MW, "aw": C.W, "gl": C.G.left, "gc": C.G.cw,
 		"ll": lado_local, "adv": adversario, "online": online(), "vh": roundi(vidas.heroes), "vm": roundi(vidas.monsters), "vmax": P.VIDA_CASTELO,
-		"t": ceili(maxf(tempo, 0.0)), "prep": ceili(maxf(preparo, 0.0)), "e": energia, "fim": fim, "u": u}
+		"t": floori(maxf(tempo, 0.0)), "prep": ceili(maxf(preparo, 0.0)), "e": energia, "fim": fim, "u": u}
 
 ## FLECHA DE FOGO acertou: estoura em chamas, dano extra e o inimigo fica QUEIMANDO por uns segundos.
 func _acerto_fogo(pr, alvo: Unidade) -> void:

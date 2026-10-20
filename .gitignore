@@ -1,3 +1,20 @@
 # Godot 4+ specific ignores
 .godot/
-/android/
+# Android: o molde (android/build) o Godot recria sozinho, então fica FORA do Git...
+/android/*
+# ...menos o que NÓS mudamos nele (plugins do login com Google, da atualização pela Play Store e da
+# loja de moedas). Se o Godot reinstalar o molde e apagar isso, recupere com:
+#   git checkout -- android/build/build.gradle android/build/src/main/AndroidManifest.xml android/build/src/main/java/com/hvm
+!/android/build/
+/android/build/*
+!/android/build/build.gradle
+!/android/build/src/
+/android/build/src/*
+!/android/build/src/main/
+/android/build/src/main/*
+!/android/build/src/main/AndroidManifest.xml
+!/android/build/src/main/java/
+/android/build/src/main/java/*
+!/android/build/src/main/java/com/
+/android/build/src/main/java/com/*
+!/android/build/src/main/java/com/hvm/

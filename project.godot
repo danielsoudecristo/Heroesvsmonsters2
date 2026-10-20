@@ -22,6 +22,7 @@ config/icon="res://assets/icone/icone_jogo.png"
 Catalogo="*uid://cjdpj0gmfeou0"
 Sons="*uid://rhs0dic23y8o"
 Conta="*uid://bsjoj5huomglt"
+Loja="*res://scripts/sistema/loja_moedas.gd"
 
 [display]
 

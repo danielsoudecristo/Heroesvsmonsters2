@@ -215,7 +215,7 @@ func _tocar(p: Vector2) -> void:
 			fechar()
 			sair.call()
 		return
-	# começar no nível (campanha): metade esquerda "<" volta um marco, metade direita ">" avança um
+	# começar no nível (campanha): metade esquerda "<" volta (marcos / 1), metade direita ">" avança até onde parou
 	var bi := _ret_inicio()
 	if inicios.size() > 1 and bi.grow(6).has_point(p):
 		var i := inicios.find(inicio)

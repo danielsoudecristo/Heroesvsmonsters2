@@ -14,6 +14,9 @@ const IMG := {"heroes": "res://assets/pvp/Heroes.png", "monsters": "res://assets
 const PALCO := Vector2(1280, 720)
 const BORDA := {"heroes": Color("ffcc33"), "monsters": Color("4fe05a")}      ## contorno das cartas
 const COR_NOME := {"heroes": Color("ffa23a"), "monsters": Color("7ee04a")}   ## nomes: laranja / verde
+## PESSOA REAL (a partida veio do servidor): contorno grosso no perfil — Heroes LARANJA, Monsters VERDE.
+## (contra o bot fica só o brilho de sempre, sem esse contorno)
+const CONTORNO_REAL := {"heroes": Color("ff8c1a"), "monsters": Color("3ddc4a")}
 const OURO := Color("f6c343")
 const CONTORNO := Color("120c04")
 const VAGAS := 8
@@ -186,7 +189,11 @@ func _ret_enviar() -> Rect2:
 
 func _rets() -> Dictionary:
 	return {"menu": Rect2(18, 14, 128, 50), "heroes": _ret_carta("heroes"), "monsters": _ret_carta("monsters"),
-		"bt_heroes": _ret_botao("heroes"), "bt_monsters": _ret_botao("monsters"), "enviar": _ret_enviar()}
+		"bt_heroes": _ret_botao("heroes"), "bt_monsters": _ret_botao("monsters"), "enviar": _ret_enviar(),
+		"replays": RET_REPLAYS}
+
+## Botão REPLAYS (36_replays.sql): as batalhas suas e dos amigos das últimas 24 h.
+const RET_REPLAYS := Rect2(1280 - 18 - 170, 14, 170, 50)
 
 # ================================================================== QUEM ESTÁ ENTRANDO
 func _do_lado(l: String) -> Array:
@@ -440,7 +447,7 @@ func _ir_arvore() -> void:
 	Perfil.pvp_sala = {}
 	get_tree().change_scene_to_file("res://cenas/campeonato.tscn")
 
-func _sair() -> void:
+func _sair(destino := "res://cenas/intro.tscn") -> void:
 	if _saindo:
 		return
 	_saindo = true
@@ -450,7 +457,7 @@ func _sair() -> void:
 	elif online and modo != "campeonato" and lado != "":
 		Conta.chamar("sair_da_fila_modo", {"p_modo": _modo_srv()})
 	Conta.estou("menu")
-	get_tree().change_scene_to_file("res://cenas/intro.tscn")
+	get_tree().change_scene_to_file(destino)
 
 # ================================================================== CHAT
 func _sistema(txt: String, l := "") -> void:
@@ -616,6 +623,10 @@ func _tocar(b: String) -> void:
 			_escolher("monsters")
 		"enviar":
 			_enviar()
+		"replays":
+			if _achou_t < 0.0:
+				Perfil.replays_volta = "res://cenas/sala_entrada.tscn"
+				_sair("res://cenas/replays.tscn")
 
 func _unhandled_key_input(ev: InputEvent) -> void:
 	if ev.is_action_pressed("ui_cancel"):
@@ -683,6 +694,7 @@ func _degrade_lados() -> void:
 func _topo(k: float) -> void:
 	var y := -60.0 * (1.0 - k)
 	_botao(Rect2(18, 14 + y, 128, 50), "← MENU", Color("4a5fae"), _apertado == "menu")
+	_botao(Rect2(RET_REPLAYS.position + Vector2(0, y), RET_REPLAYS.size), "▶ REPLAYS", Color("2fa84f"), _apertado == "replays")
 	var t: String = TITULO[modo]
 	var w := f_titulo.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 40).x + 150
 	var r := Rect2(PALCO.x / 2.0 - w / 2.0, 10 + y, w, 62)
@@ -902,6 +914,14 @@ func _grupo(l: String, k: float) -> void:
 		_texto(Vector2(r.get_center().x, r.get_center().y + 20), "Ninguém por aqui agora", 15, Color(1, 1, 1, 0.45), true, 2)
 
 ## Foto redonda: Google (pessoa com conta), retrato do personagem, ou a inicial do nome.
+## Anel grosso em volta do perfil de quem é PESSOA REAL (com um brilho pulsando por fora).
+func _contorno_real(c: Vector2, raio: float, cor: Color) -> void:
+	var pul := 0.5 + 0.5 * sin(_relogio * 5.0)
+	draw_arc(c, raio + 22, 0, TAU, 64, Color(cor, 0.25 + 0.2 * pul), 10, true)
+	draw_arc(c, raio + 13, 0, TAU, 64, CONTORNO, 16, true)
+	draw_arc(c, raio + 13, 0, TAU, 64, cor, 11, true)
+	draw_arc(c, raio + 15, PI * 1.1, PI * 1.6, 16, cor.lightened(0.5), 4, true)
+
 func _avatar(c: Vector2, raio: float, g: Dictionary, cor: Color) -> void:
 	draw_circle(c, raio + 3, CONTORNO)
 	draw_circle(c, raio + 1.5, cor)
@@ -1009,6 +1029,8 @@ func _tela_duelo() -> void:
 		var g: Dictionary = {"nome": _meu_nome(), "foto": "", "eu": true, "personagem": ""} if l == meu_l else _achou
 		for i in 3:
 			draw_circle(c, 120 + i * 16 + sin(_relogio * 4.0) * 3.0, Color(cor, 0.12 - i * 0.03))
+		if not _sala.is_empty():                       # PESSOA REAL: contorno laranja (Heroes) / verde (Monsters)
+			_contorno_real(c, 104, CONTORNO_REAL[l])
 		_avatar(c, 104, g, cor)
 		var nome := "Você" if l == meu_l else str(g.get("nome", "?"))
 		_texto(Vector2(c.x, c.y + 156), nome, 34, COR_NOME[l] if l != meu_l else OURO, true, 6)

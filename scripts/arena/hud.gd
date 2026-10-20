@@ -36,6 +36,9 @@ var guardado := false
 var vida_lag := 100.0                               # barra branca que "segue" o dano (efeito de golpe)
 var horda_lag := 1.0
 var desliza := 0.0                                  # 0 = cartas à mostra, 1 = guardadas
+var _fechadas := -1                                 # (som das cartas) -1 = ainda não começou; 0 = à mostra; 1 = guardadas
+## SOM das cartas abrindo/fechando (assets/Jogo/som/): o 1º arquivo que existir.
+const SONS_CARTAS := ["Jogo/som/cartas", "Jogo/som/som cartas aparendo,e fechamento das cartas"]
 var _retratos: Dictionary = {}                      # id -> [textura, região recortada]
 const ICONE_MONSTERS := "res://assets_otimizados/Jogo/icone_monsters.png"
 const ICONE_GUERREIRO := "res://assets_otimizados/Jogo/icone_guerreiro.png"
@@ -64,6 +67,11 @@ func _process(dt: float) -> void:
 	vida_lag = move_toward(vida_lag, arena.vida_castelo, dt * (8.0 if vida_lag > arena.vida_castelo else 200.0))
 	horda_lag = move_toward(horda_lag, arena.horda_restante(), dt * 0.25)
 	desliza = move_toward(desliza, 1.0 if (guardado or arena.carta_sel >= 0) else 0.0, dt * 2.6)   # ~0,4 s para abrir/fechar o leque
+	var fechadas := 1 if (guardado or arena.carta_sel >= 0) else 0
+	if fechadas != _fechadas:
+		if _fechadas >= 0 and visible:
+			_som_cartas()                              # as cartas abriram ou fecharam: som do leque
+		_fechadas = fechadas
 	for i in arena.cartas_dados.size():
 		_sel_y[i] = move_toward(_sel_y[i], 16.0 if i == arena.carta_sel else 0.0, dt * 120.0)
 	queue_redraw()
@@ -79,8 +87,8 @@ func _input(ev: InputEvent) -> void:
 ## Devolve true se o toque foi no HUD (aí a arena não usa).
 func toque(pos: Vector2) -> bool:
 	# janelas de pausa/sair abertas (ou a tela de derrota): deixa os botões da janela receberem o toque
-	if not visible or arena.get("painel_menu_visivel") == true:
-		return false
+	if not visible or arena.get("painel_menu_visivel") == true or arena.get("assistindo") == true:
+		return false                                  # (REPLAY: quem cuida dos toques é a arena)
 	var painel_pvp: Variant = arena.get("painel")
 	if painel_pvp is Control and (painel_pvp as Control).visible:
 		return false
@@ -107,8 +115,7 @@ func toque(pos: Vector2) -> bool:
 		guardado = not guardado
 		if guardado:
 			arena.carta_sel = -1
-		Sons.tocar("Jogo/som/clique", 0.5)
-		return true
+		return true                                   # (o som do leque toca no _process)
 	if guardado and pos.y > C.H - 40 and pos.x < _fim_cartas():
 		guardado = false                              # cartas guardadas: tocar na faixa de baixo também traz de volta
 		return true
@@ -120,8 +127,7 @@ func toque(pos: Vector2) -> bool:
 		for i in range(arena.cartas_dados.size() - 1, -1, -1):  # de trás para frente: a da direita fica por cima
 			if _ret_carta(i).has_point(pos):
 				arena.carta_sel = -1 if arena.carta_sel == i else i
-				Sons.tocar("Jogo/som/clique", 0.5)
-				return true
+				return true                           # (escolheu: as cartas descem e o som do leque toca)
 	return false
 
 func _botao(k: String) -> void:
@@ -143,6 +149,13 @@ func _unhandled_key_input(ev: InputEvent) -> void:
 			guardado = false
 		elif ev.keycode == KEY_ESCAPE:
 			arena.carta_sel = -1
+
+func _som_cartas() -> void:
+	for c in SONS_CARTAS:
+		if Sons.carregar(c):
+			Sons.tocar(c, 0.8)
+			return
+	Sons.tocar("Jogo/som/clique", 0.5)                # (sem o arquivo: o clique de sempre)
 
 ## Retângulo de toque de uma carta (sem a inclinação; é perto o bastante).
 func _ret_carta(i: int) -> Rect2:
