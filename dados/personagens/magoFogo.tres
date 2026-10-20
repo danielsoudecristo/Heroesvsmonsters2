@@ -81,11 +81,13 @@ anims = Dictionary[String, ExtResource("1_t0i4p")]({
 "parado": SubResource("Resource_q658d")
 })
 sons = Dictionary[String, String]({
+"fogo": "Arqueiro/atacando/fogo ao atingir o inimigo",
 "impacto": "Mago de Fogo/som/explosao",
 "magia": "Mago de Fogo/som/magia",
 "morrer": "Mago de Fogo/morrendo/som"
 })
 volumes = Dictionary[String, float]({
+"fogo": 0.85,
 "impacto": 0.8,
 "magia": 0.7,
 "morrer": 0.8

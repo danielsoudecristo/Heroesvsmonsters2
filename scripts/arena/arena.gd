@@ -122,6 +122,8 @@ var camada_unidades: Node2D
 var desenho: Node2D
 var fx_chao: FxExplosao
 var fx_ar: FxExplosao
+var fx_magia_chao: FxMagia
+var fx_magia: FxMagia
 var ui: CanvasLayer
 var hud: Control
 var lbl_banner: Label
@@ -129,6 +131,7 @@ var lbl_fps: Label
 var bt_tentar: Button
 var tela_derrota: Control                  # painel bonito do "O CASTELO CAIU!" (tela_derrota.gd)
 var tochas: Node2D                         # fogo vivo nas tochas do fundo (tochas_fundo.gd)
+var castelo_caiu: Node2D                   # castelo destruído com fogo e fumaça (castelo_caiu.gd)
 var banner_t := 0.0
 var segurar := false                        ## TUTORIAL: campanha parada (sem monstros e sem energia do céu)
 var tutorial: Node = null
@@ -178,8 +181,8 @@ func _ready() -> void:
 		_preparar_inicios()
 		selecao.abrir(cartas_todas)
 
-## MARCOS: depois de vencer o nível 10, 20, 30... dá para começar do nível seguinte (não precisa
-## refazer tudo para tentar o recorde). No HardCore não: lá perder é voltar para o 1.
+## CONTINUAR: a campanha começa no nível depois do ÚLTIMO CONCLUÍDO (e dá para voltar para os marcos
+## 11, 21, 31... ou o 1). No HardCore não: lá perder é voltar para o 1.
 func _preparar_inicios() -> void:
 	selecao.info_nivel = _info_nivel
 	if nivel_inicial != 1 or dif.perde_tudo:
@@ -187,7 +190,7 @@ func _preparar_inicios() -> void:
 		selecao.inicio = nivel_inicial
 		return
 	selecao.inicios = C.inicios_liberados(Perfil.recorde(Perfil.dificuldade, lado_jogador))
-	selecao.inicio = int(selecao.inicios[-1])               # já sugere o marco mais alto (o mais perto do recorde)
+	selecao.inicio = int(selecao.inicios[-1])               # já sugere o nível depois do último concluído
 
 ## Uma linha sobre o nível n (aparece na janela de cartas para escolher o baralho certo).
 func _info_nivel(n: int) -> String:
@@ -247,6 +250,9 @@ func _montar_cena() -> void:
 	add_child(fundo)
 	tochas = preload("res://scripts/arena/tochas_fundo.gd").new()
 	fundo.add_child(tochas)
+	castelo_caiu = preload("res://scripts/arena/castelo_caiu.gd").new()   # o castelo em ruínas pegando fogo (na derrota)
+	fundo.add_child(castelo_caiu)
+	castelo_caiu.limpar()
 	camada_unidades = Node2D.new()
 	camada_unidades.y_sort_enabled = true      # quem está mais embaixo fica na frente
 	add_child(camada_unidades)
@@ -263,6 +269,15 @@ func _montar_cena() -> void:
 	fx_ar.z_index = 9
 	fx_ar.par_chao = fx_chao
 	add_child(fx_ar)
+	fx_magia_chao = FxMagia.new()               # magia: luz/onda/marca no chão (embaixo de todos)...
+	fx_magia_chao.camada = "chao"
+	fx_magia_chao.z_index = -5
+	add_child(fx_magia_chao)
+	fx_magia = FxMagia.new()                    # ...e a esfera voando + o impacto por cima
+	fx_magia.z_index = 11
+	fx_magia.par_chao = fx_magia_chao
+	fx_magia.projeteis = projeteis
+	add_child(fx_magia)
 
 func _trocar_fundo() -> void:
 	# o fundo do lado dos monstros tem o castelo dos monstros na esquerda (mesma geometria de sempre)
@@ -282,6 +297,8 @@ func _trocar_fundo() -> void:
 		var k := C.escala_fundo(self, tex)        # cobre a tela inteira (a imagem "_largo" sobra dos lados)
 		fundo.scale = Vector2(k, k)
 	tochas.usar(tex, noite)                     # fogo vivo nas tochas pintadas no fundo
+	if castelo_caiu:
+		castelo_caiu.limpar()                   # (nível novo: o castelo está inteiro de novo)
 	RenderingServer.set_default_clear_color(Color("07080d"))   # (se sobrar alguma borda, fica escura, nunca verde)
 
 # ================================================================= HUD
@@ -366,6 +383,8 @@ func comecar_nivel(n: int, limpar := true) -> void:
 	nivel = n
 	cartas_usadas = {}
 	_t_nivel = 0.0
+	if menu_unidade:
+		menu_unidade.zerar_preco()                              # nível novo: o poder vermelho volta ao preço inicial
 	Conta.estou("campanha", "Nível %d · %s" % [n, str(dif.get("nome", ""))])
 	fase = C.fase(n)
 	mods = C.mods_do_nivel(n, Perfil.dificuldade)
@@ -386,7 +405,8 @@ func comecar_nivel(n: int, limpar := true) -> void:
 	hud.visible = true
 	if limpar:
 		_limpar_tudo()
-		energia = C.energia_inicial(n) + int(dif.energia_ini)
+		energia = C.energia_inicial(n) + int(dif.energia_ini) + Perfil.energia_extra   # (painel: energia extra)
+		energia = maxi(energia, 50)
 	rajada = 0
 	_trocar_fundo()
 	var inimigos := 0
@@ -544,7 +564,7 @@ func _fim_do_nivel() -> void:
 	if novo:
 		txt += "  ·  ⭐ NOVO RECORDE!"
 	if C.eh_marco(nivel):
-		txt += "\nMARCO %d VENCIDO! Agora você pode começar do nível %d." % [nivel, nivel + 1]
+		txt += "\nMARCO %d VENCIDO!" % nivel
 	elif premio.variedade < C.PREMIO.variedade_max and cartas_usadas.size() < 7:
 		txt += "\nUse mais cartas diferentes: +%d%% de moedas por carta!" % roundi(C.PREMIO.variedade_por_carta * 100)
 	mostrar_banner(txt, 4.5)
@@ -575,7 +595,8 @@ func premio_do_nivel(n: int, estrelas: int, recorde_novo: bool, cartas_diferente
 	return {"total": total, "extras": ", ".join(extras), "variedade": variedade}
 
 func _derrota() -> void:
-	if estado != "derrota":
+	var primeira := estado != "derrota"
+	if primeira:
 		Conta.registrar("campanha", {"dif": Perfil.dificuldade, "nivel": nivel, "lado": lado_jogador, "venceu": false})
 		_registrar_cartas(false)
 	estado = "derrota"
@@ -590,6 +611,13 @@ func _derrota() -> void:
 	banner_t = 0.0
 	carta_sel = -1
 	hud.visible = false                                         # as cartas saem: o painel da derrota é o foco
+	# o castelo DESABA: a arte vira a do castelo em ruínas pegando fogo — o painel espera a pessoa ver isso
+	if primeira and castelo_caiu and castelo_caiu.cair():
+		Sons.tocar("Castelo/som/caiu", 1.0)
+		get_tree().create_timer(2.2).timeout.connect(func():
+			if estado == "derrota" and not tela_derrota.visible:
+				tela_derrota.mostrar(dados))
+		return
 	tela_derrota.mostrar(dados)
 
 ## DICA DA DERROTA: quem mais derrubou o castelo, quem é forte contra ele e quanto custa evoluir.
@@ -671,6 +699,7 @@ func colocar_heroi(casa: Vector2i) -> void:
 		energia -= p.custo
 	recarga[p.id] = p.recarga
 	criar_unidade(p.id, lado_jogador, casa.y, casa.x, nivel_da_carta(p.id))
+	Sons.tocar("Jogo/som/terra", 0.9)            # bateu na terra: "tum"
 	cartas_usadas[p.id] = int(cartas_usadas.get(p.id, 0)) + 1
 	carta_sel = -1                                 # colocou: solta a carta
 	if C.ESCONDER_CARTAS_AO_COLOCAR:
@@ -1227,7 +1256,7 @@ func _passo_projeteis(dt: float) -> void:
 				_explodir(pr, alvo)
 				pr.ativo = false
 			elif pr.tipo == "magia_sombra":
-				explosoes.append([alvo.position + Vector2(0, -50), 34.0, 0.0, Color("9b6bff")])
+				_impacto_magia(pr, alvo)
 				pr.ativo = false
 			elif pr.tipo == "energia":
 				# o feixe PARA no corpo do inimigo (na frente da cabeça) e se apaga encostado nele
@@ -1256,7 +1285,10 @@ func _passo_projeteis(dt: float) -> void:
 				explosoes.append([pr.pos, 16.0, 0.0, Color("c8b8a0")])   # poeirinha de pedra
 			else:
 				pr.ativo = false
-				explosoes.append([pr.pos, 26.0, 0.0, Color("ff6b5e")])
+				if FxMagia.eh_magia(pr.tipo) and fx_magia:   # a magia estoura na pedra com a cor dela
+					fx_magia.impacto(pr.pos, signf(pr.vel), 30.0, pr.tipo, C.linha_y(pr.linha))
+				else:
+					explosoes.append([pr.pos, 26.0, 0.0, Color("ff6b5e")])
 			if estado != "derrota":
 				vida_castelo -= DANO_CASTELO_TIRO
 				invasores[pr.origem_id] = float(invasores.get(pr.origem_id, 0.0)) + DANO_CASTELO_TIRO
@@ -1482,14 +1514,27 @@ func _desenhar_choques(d: Node2D) -> void:
 
 func _explodir(pr: Projetil, alvo: Unidade) -> void:
 	var centro := alvo.position + Vector2(0, -50)
-	var cor := Color("ff8a2a") if pr.tipo == "magia_fogo" else Color("7fb6ff")
-	explosoes.append([centro, pr.raio, 0.0, cor])
+	_impacto_magia(pr, alvo)
 	var lista: Array = monstros if pr.lado == lado_jogador else herois   # explode nos inimigos do atirador
 	for r in range(maxi(0, pr.linha - 1), mini(C.G.rows, pr.linha + 2)):
 		for m in lista[r]:
 			if m != alvo and not m.morto and (m.position + Vector2(0, -50)).distance_to(centro) <= pr.raio:
 				ferir(m, pr.dano_area, null, pr.origem_id)
+				m.levar_impacto(signf(m.position.x - centro.x) if m.position.x != centro.x else signf(pr.vel), 0.45)
 	Sons.tocar(alvo.p.sons.get("impacto", "Mago/som/explosao"), 0.7)
+
+## Efeito da magia acertando o corpo: estoura na FRENTE do inimigo, na altura em que a esfera voava,
+## e o inimigo leva o tranco para trás (só visual).
+func _impacto_magia(pr: Projetil, alvo: Unidade) -> void:
+	var dir := signf(pr.vel)
+	var ponto := Vector2(alvo.position.x - dir * 16.0, clampf(pr.pos.y, alvo.position.y - 110.0, alvo.position.y - 30.0))
+	if fx_magia:
+		fx_magia.impacto(ponto, dir, pr.raio, pr.tipo, alvo.position.y, alvo)
+	else:
+		explosoes.append([ponto, maxf(pr.raio, 34.0), 0.0, Color("7fb6ff")])
+	alvo.levar_impacto(dir, 0.85 if pr.raio > 0.0 else 0.55)
+	if pr.tipo == "magia_fogo":                       # a bola de fogo pega no inimigo: o mesmo som da flecha de fogo
+		Sons.do_personagem(Catalogo.get_p(pr.origem_id), "fogo")
 
 ## Tiros do Engenheiro: clarão arcano no cano + flash na cabeça + rastros no ar
 func _clarão_energia(pos: Vector2, dir: float) -> void:
@@ -1773,13 +1818,14 @@ func _desenhar() -> void:
 				d.draw_circle(pr.origem, 8.0 * pulso_cano * alfa + 1.0, Color("7ff7ff", 0.7 * alfa))
 				d.draw_circle(pr.origem, 4.0 * alfa + 1.0, Color.WHITE, alfa)
 			_:
-				var cor := Color("7fb6ff")
-				if pr.tipo == "magia_fogo": cor = Color("ff8a2a")
-				elif pr.tipo == "magia_sombra": cor = Color("9b6bff")
-				var pulso := 1.0 + 0.15 * sin(pr.t * 20.0)
-				d.draw_circle(pr.pos, 16.0 * pulso, Color(cor, 0.25))
-				d.draw_circle(pr.pos, 9.0 * pulso, cor)
-				d.draw_circle(pr.pos, 4.0, Color.WHITE)
+				if not (FxMagia.eh_magia(pr.tipo) and fx_magia):   # (a esfera da magia é desenhada no fx_magia, com luz aditiva)
+					var cor := Color("7fb6ff")
+					if pr.tipo == "magia_fogo": cor = Color("ff8a2a")
+					elif pr.tipo == "magia_sombra": cor = Color("9b6bff")
+					var pulso := 1.0 + 0.15 * sin(pr.t * 20.0)
+					d.draw_circle(pr.pos, 16.0 * pulso, Color(cor, 0.25))
+					d.draw_circle(pr.pos, 9.0 * pulso, cor)
+					d.draw_circle(pr.pos, 4.0, Color.WHITE)
 	# (as ondas de terra / ossos / fogo são desenhadas em _desenhar_ondas_linha: na ordem de profundidade)
 	# explosões
 	for e in explosoes:

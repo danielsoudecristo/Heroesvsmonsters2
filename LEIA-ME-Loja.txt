@@ -1,0 +1,120 @@
+LOJA DE MOEDAS PELA GOOGLE PLAY — O QUE FALTA VINCULAR
+======================================================
+
+O JOGO JÁ ESTÁ PRONTO (esta versão: 2.9, código 20):
+   - Loja de moedas no menu: toque nas MOEDAS do seu perfil (tem um "+" verde).
+   - 5 pacotes: Punhado 1.000 · Saco 2.200 · Baú 5.000 (mais popular) · Cofre 14.000 · Tesouro 32.000 (melhor valor).
+   - 1ª compra de cada conta sai EM DOBRO.
+   - Quem dá as moedas é o SERVIDOR, depois de conferir a compra com o Google (ninguém cria moedas pelo app).
+   - Se o jogo fechar no meio da compra, as moedas são entregues quando a pessoa abrir o jogo de novo.
+
+Arquivos novos:
+   android/build/src/main/java/com/hvm/LojaPlay.java   plugin Android (Google Play Billing Library 8)
+   scripts/sistema/loja_moedas.gd                      autoload "Loja" (compra, confere, entrega)
+   scripts/intro/loja.gd                               a tela da loja
+   supabase/33_loja_moedas.sql                         pacotes, compras e a função que dá as moedas
+   supabase/functions/verificar-compra/index.ts        confere cada compra com o Google
+
+Faça as partes abaixo NESTA ORDEM. Marque [x] conforme for fazendo.
+
+
+PARTE A — PLAY CONSOLE: RECEBER O DINHEIRO
+------------------------------------------
+[ ] 1. Perfil para pagamentos > "Adicionar forma de pagamento": sua conta bancária (no seu nome/CPF).
+[ ] 2. Na mesma página: "Inscreva-se para a taxa de serviço de 15%"
+       > Gerenciar grupo de contas > criar o grupo (sem outras contas associadas) > aceitar os termos.
+       SEM ISSO O GOOGLE FICA COM 30% EM VEZ DE 15%.
+
+
+PARTE B — SUPABASE: BANCO DE DADOS
+----------------------------------
+[ ] 3. Supabase > SQL Editor > New query > cole TUDO de supabase/32_poder_preco.sql > Run
+       (se ainda não rodou: deixa o poder vermelho custar mais de 100 moedas).
+[ ] 4. Supabase > SQL Editor > New query > cole TUDO de supabase/33_loja_moedas.sql > Run.
+       (cria os pacotes; dá para mudar quantas moedas cada um dá na tabela loja_pacotes, sem atualizar o app)
+
+
+PARTE C — ENVIAR A VERSÃO COM A LOJA PARA O TESTE FECHADO
+---------------------------------------------------------
+O Play Console SÓ deixa criar os produtos depois de receber uma versão do app que tenha a loja.
+[ ] 5. No Godot: Projeto > Exportar > Android > Exportar projeto (gera o .aab, código 20).
+[ ] 6. Play Console > Testar e lançar > Teste fechado > Criar nova versão > envie o .aab > Revisar > Lançar.
+
+
+PARTE D — PLAY CONSOLE: CRIAR OS PACOTES DE MOEDAS
+--------------------------------------------------
+[ ] 7. Play Console > seu app > Monetizar com o Google Play > Produtos > Produtos no app
+       (se aparecer "Produtos únicos", é o mesmo lugar) > Criar produto. Crie os 5:
+
+          ID do produto (EXATAMENTE assim)   Nome que aparece      Preço
+          moedas_1000                        1.000 moedas          R$ 4,90
+          moedas_2200                        2.200 moedas          R$ 9,90
+          moedas_5000                        5.000 moedas          R$ 19,90
+          moedas_14000                       14.000 moedas         R$ 49,90
+          moedas_32000                       32.000 moedas         R$ 99,90
+
+       Em cada um: descrição curta (ex.: "Moedas para evoluir personagens e usar poderes"),
+       preço em BRL (o Google converte para os outros países) > Salvar > ATIVAR.
+       (O ID não pode ser mudado depois. Se usar outro ID, mude também na tabela loja_pacotes.)
+
+
+PARTE E — GOOGLE CLOUD: A "CONTA DE SERVIÇO" (o servidor conferir as compras)
+----------------------------------------------------------------------------
+[ ] 8. https://console.cloud.google.com > escolha o MESMO projeto do login com Google do jogo.
+[ ] 9. APIs e serviços > Biblioteca > procure "Google Play Android Developer API" > ATIVAR.
+[ ] 10. IAM e administrador > Contas de serviço > Criar conta de serviço
+        > nome: loja-moedas > Criar e continuar > (não precisa dar papel) > Concluir.
+[ ] 11. Clique na conta criada > aba Chaves > Adicionar chave > Criar nova chave > JSON > Criar.
+        Baixa um arquivo .json — GUARDE BEM, ele é uma senha. Nunca coloque no jogo nem no GitHub.
+[ ] 12. Copie o e-mail da conta de serviço (algo como loja-moedas@SEU-PROJETO.iam.gserviceaccount.com).
+
+
+PARTE F — PLAY CONSOLE: DAR PERMISSÃO PARA A CONTA DE SERVIÇO
+-------------------------------------------------------------
+[ ] 13. Play Console (tela inicial, fora do app) > Usuários e permissões > Convidar novos usuários
+        > e-mail: o da conta de serviço (passo 12)
+        > Permissões do app: adicione o Heroes vs Monsters e marque:
+             - Ver dados financeiros, pedidos e respostas a pesquisas de cancelamento
+             - Gerenciar pedidos e assinaturas
+        > Convidar usuário.
+        (Pode levar algumas horas até o Google liberar. Se a compra der "o Google não confirmou",
+         normalmente é isso: espere e teste de novo — o jogo entrega as moedas sozinho depois.)
+
+
+PARTE G — SUPABASE: PUBLICAR O VERIFICADOR DE COMPRAS
+-----------------------------------------------------
+[ ] 14. Supabase > Edge Functions > Secrets > Add new secret:
+          Nome:  GOOGLE_SERVICE_ACCOUNT_JSON
+          Valor: abra o .json do passo 11 no Bloco de Notas, copie TUDO e cole aqui > Save.
+[ ] 15. Supabase > Edge Functions > Deploy a new function > "Via Editor"
+          Nome: verificar-compra   (exatamente assim)
+          Apague o código de exemplo, cole TUDO de supabase/functions/verificar-compra/index.ts > Deploy.
+        (Deixe ligada a opção "Verify JWT"/"Enforce JWT": só quem está logado no jogo consegue chamar.)
+        Quem usa a Supabase CLI pode fazer:  supabase functions deploy verificar-compra
+
+
+PARTE H — TESTAR SEM GASTAR DINHEIRO
+------------------------------------
+[ ] 16. Play Console (tela inicial) > Configurações > Teste de licença > adicione o SEU e-mail
+        (e de quem for testar a loja) > Resposta da licença: RESPOND_NORMALLY > Salvar.
+        Esses e-mails compram de mentira ("Cartão de teste, sempre aprovado"). Os outros testadores
+        do teste fechado PAGAM DE VERDADE — e esse dinheiro vai para você.
+[ ] 17. No celular: instale/atualize o jogo PELO LINK DO TESTE FECHADO (a loja não funciona em APK
+        instalado por fora), entre com a sua conta, toque nas moedas do perfil e compre o Punhado.
+[ ] 18. Deve aparecer "+2.000 MOEDAS! (EM DOBRO)" (1ª compra). Confira no Supabase:
+        Table Editor > compras_moedas (a linha da compra, com teste = true).
+
+DEU ERRO?
+   - Botões cinza na loja: o jogo não foi instalado pela Play Store, ou os produtos ainda não
+     foram criados/ativados (passo 7), ou o celular está sem a conta Google da Play.
+   - "Não deu para concluir a compra": o produto não está ativo, ou a versão instalada é antiga.
+   - "Estamos confirmando suas moedas": o servidor ainda não conseguiu falar com o Google.
+     Veja Supabase > Edge Functions > verificar-compra > Logs. Causas comuns: falta o segredo
+     (passo 14), a API não foi ativada (passo 9) ou a permissão ainda não foi liberada (passo 13).
+     A compra NÃO se perde: o jogo tenta entregar de novo sozinho.
+
+IMPORTANTE
+   - Formulário "Segurança dos dados" no Play Console: marque que o app coleta "Histórico de compras"
+     (Informações financeiras), usado para a funcionalidade do app.
+   - Reembolsos: se o Google devolver o dinheiro de alguém, as moedas continuam com a pessoa.
+     (Dá para tirar depois com as "notificações em tempo real" do Google — é um próximo passo.)

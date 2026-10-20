@@ -67,6 +67,11 @@ var forcar2 := false                      ## PODER VERMELHO pedido: solta o pode
 var alvo_x := INF                         ## (campanha) casa para onde está andando
 var _ordem_t := 0.0                       ## (campanha) espera para tentar a próxima casa
 var _brilho2 := 0.0                       ## brilho vermelho de quando solta o poder 2
+## SOBRECARGA DE ENERGIA (poder vermelho da Elara e do Esqueleto Black, pago com moedas): solta na hora uma
+## rajada de energia e, por SOBRECARGA_DUR segundos, gera o DOBRO de energia duas vezes mais rápido.
+const SOBRECARGA_DUR := 12.0
+const SOBRECARGA_RAJADA := 3              ## orbes soltos na hora (cada um vale 2x a energia do ciclo)
+var sobrecarga := 0.0
 var _poder_desenhado := false
 ## PODER VERMELHO dos arqueiros: as próximas flechas saem DE FOGO (ponta em brasa, queimam quem acertam)
 const FLECHAS_DE_FOGO := ["esqueletoArqueiro", "arqueiro"]
@@ -212,10 +217,10 @@ func _process(_delta: float) -> void:
 	if p.extra.has("pavio_andar"):                      # fogo do pavio (Bombardeiro): anima todo quadro
 		_passo_fogo(_delta)
 		queue_redraw()
-	elif pressa > 0.0 or _brilho2 > 0.0 or queimando > 0.0 or flechas_fogo > 0 or _poder_desenhado:
-		queue_redraw()                                   # (faíscas do poder azul / fogo)
-		_poder_desenhado = pressa > 0.0 or _brilho2 > 0.0 or queimando > 0.0 or flechas_fogo > 0
-	var com_luz := (selecionado or pressa > 0.0 or _brilho2 > 0.0) and not morto
+	elif pressa > 0.0 or _brilho2 > 0.0 or queimando > 0.0 or flechas_fogo > 0 or sobrecarga > 0.0 or _poder_desenhado:
+		queue_redraw()                                   # (faíscas do poder azul / fogo / sobrecarga)
+		_poder_desenhado = pressa > 0.0 or _brilho2 > 0.0 or queimando > 0.0 or flechas_fogo > 0 or sobrecarga > 0.0
+	var com_luz := (selecionado or pressa > 0.0 or _brilho2 > 0.0 or sobrecarga > 0.0) and not morto
 	if com_luz and _luz == null:
 		_criar_luz()
 	if _luz:
@@ -364,6 +369,9 @@ func passo(dt: float) -> void:
 	if mostra_barra > 0.0:
 		mostra_barra -= dt
 	var acel := 1.0 + pressa * (0.4 if p.comportamento == "gerador" else 1.3)   # PODER AZUL: ataca mais rápido
+	if sobrecarga > 0.0:                              # SOBRECARGA: o ciclo de energia corre 2x mais rápido
+		sobrecarga = maxf(0.0, sobrecarga - dt)
+		acel *= 2.0
 	if _pressa_t < 99.0:
 		_pressa_t += dt
 		if _pressa_t > 1.3:
@@ -407,6 +415,8 @@ func passo(dt: float) -> void:
 			trecho = ""
 			set_anim("especial")
 			_brilho2 = 0.9
+		elif p.comportamento == "gerador":
+			_sobrecarga_energia()
 	if pvp and ordem == "voltar" and _recuar(dt):
 		return
 	_decidir_virada(dt)                               # inimigo atrás? vira e luta com ele
@@ -574,11 +584,31 @@ func toque_azul() -> void:
 	queue_redraw()
 
 func tem_poder2() -> bool:
-	return (p.anims.has("especial") or p.id in FLECHAS_DE_FOGO) and not morto
+	return (p.anims.has("especial") or p.id in FLECHAS_DE_FOGO or p.comportamento == "gerador") and not morto
 
-## Já está usando o poder 2 (não dá para pedir de novo agora).
+## Já está usando o poder 2 (não dá para pedir de novo agora). A sobrecarga dá para comprar de novo mesmo
+## ligada (cada compra solta outra rajada e renova o tempo) — só trava um instante contra toque duplo.
 func usando_poder2() -> bool:
-	return estado == "especial" or flechas_fogo > 0
+	return estado == "especial" or flechas_fogo > 0 or (p.comportamento == "gerador" and _brilho2 > 0.0)
+
+## SOBRECARGA DE ENERGIA: rajada de orbes de energia na hora + gera o dobro, 2x mais rápido, por um tempo.
+func _sobrecarga_energia() -> void:
+	sobrecarga = SOBRECARGA_DUR
+	_brilho2 = 0.9
+	var em: Dictionary = p.extra.get("energia_mao", {})
+	var mao := position + Vector2(float(em.get("x", 0)), float(em.get("y", -50)))
+	for k in SOBRECARGA_RAJADA:
+		var desvio := float(k) - (SOBRECARGA_RAJADA - 1) / 2.0
+		var pos := mao + Vector2(desvio * 34.0, -absf(desvio) * 10.0 - 12.0)
+		_soltar_energia(pos, p.gera_energia * 2)
+	Sons.do_personagem(p, "gerar")
+
+## Solta um orbe de energia para o lado desta tropa (igual ao ciclo normal do gerador).
+func _soltar_energia(pos: Vector2, valor: int) -> void:
+	if pvp:                                           # PvP: Elara e Esqueleto Black geram para o lado deles
+		arena.soltar_energia_lado(pos, valor, lado, self)   # (também na arena inimiga)
+	elif lado == arena.lado_jogador:                  # campanha: gera para quem está defendendo
+		arena.soltar_energia(pos, valor)
 
 ## FLECHA DE FOGO acertou: pega fogo (dano aos poucos, a cada meio segundo).
 func queimar(dur: float, dano_tick: float, de := "esqueletoArqueiro") -> void:
@@ -723,9 +753,15 @@ func _recuar(dt: float) -> bool:
 
 ## Brilho do PODER AZUL (anel azul nos pés + faíscas subindo) e do VERMELHO (explosão de brilho) — desenhado
 ## por cima do personagem, sem atrapalhar.
+## Cor da energia da sobrecarga: dourada na Elara, verde-ácido no Esqueleto Black.
+func _cor_sobrecarga() -> Color:
+	return Color(1.0, 0.82, 0.3) if lado == "heroes" else Color(0.72, 1.0, 0.3)
+
 func _desenho_poderes() -> void:
 	if queimando > 0.0 or flechas_fogo > 0:
 		_desenho_fogo()
+	if sobrecarga > 0.0:
+		_desenho_sobrecarga()
 	if pressa <= 0.01:
 		return
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 / maxf(absf(scale.x), 0.01), 1.0 / maxf(absf(scale.y), 0.01)))
@@ -737,6 +773,37 @@ func _desenho_poderes() -> void:
 		var pos := Vector2(px, -6.0 - f * 110.0)
 		draw_circle(pos, 4.0 * (1.0 - f) + 1.0, Color(0.45, 0.75, 1.0, 0.25 * (1.0 - f) * a))
 		draw_circle(pos, 1.6 * (1.0 - f) + 0.6, Color(0.85, 0.95, 1.0, 0.9 * (1.0 - f) * a))
+	draw_set_transform(Vector2.ZERO)
+
+## SOBRECARGA: anéis de energia girando em volta do corpo, faíscas subindo em espiral e um contador de tempo
+## (o anel no chão vai fechando conforme acaba).
+func _desenho_sobrecarga() -> void:
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 / maxf(absf(scale.x), 0.01), 1.0 / maxf(absf(scale.y), 0.01)))
+	var tt := Time.get_ticks_msec() / 1000.0
+	var cor := _cor_sobrecarga()
+	var alt := (anim.ay * absf(scale.y)) if anim else 110.0
+	var fim := clampf(sobrecarga / 1.0, 0.0, 1.0)            # (some suave no último segundo)
+	# dois anéis de energia (elipses) subindo e descendo pelo corpo, girando
+	for k in 2:
+		var y := -alt * (0.3 + 0.35 * (0.5 + 0.5 * sin(tt * 2.2 + k * PI)))
+		var pts := PackedVector2Array()
+		for i in 25:
+			var ang := TAU * i / 24.0 + tt * (3.0 if k == 0 else -3.0)
+			pts.append(Vector2(cos(ang) * 38.0, y + sin(ang) * 9.0))
+		draw_polyline(pts, Color(cor, 0.35 * fim), 5.0, true)
+		draw_polyline(pts, Color(cor.lightened(0.5), 0.85 * fim), 1.8, true)
+	# faíscas subindo em espiral
+	for s in 10:
+		var f := fmod(tt * 0.9 + s * 0.1, 1.0)
+		var ang := s * 2.4 + tt * 4.0
+		var pos := Vector2(cos(ang) * (34.0 - f * 18.0), -f * alt * 1.15)
+		draw_circle(pos, 3.6 * (1.0 - f) + 1.0, Color(cor, 0.35 * (1.0 - f) * fim))
+		draw_circle(pos, 1.6 * (1.0 - f) + 0.6, Color(1, 1, 0.9, 0.95 * (1.0 - f) * fim))
+	# tempo que falta: arco no chão que vai fechando
+	var resta := sobrecarga / SOBRECARGA_DUR
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 / maxf(absf(scale.x), 0.01), 0.32 / maxf(absf(scale.y), 0.01)))
+	draw_arc(Vector2.ZERO, 44.0, -PI / 2.0, -PI / 2.0 + TAU * resta, 40, Color(0, 0, 0, 0.45 * fim), 9.0, true)
+	draw_arc(Vector2.ZERO, 44.0, -PI / 2.0, -PI / 2.0 + TAU * resta, 40, Color(cor, 0.95 * fim), 5.0, true)
 	draw_set_transform(Vector2.ZERO)
 
 ## Fogo no corpo de quem foi acertado pela flecha de fogo (e a brasa na mão do arqueiro com o poder ligado).
@@ -821,11 +888,18 @@ func _desenhar_luz() -> void:
 		var f := 0.9 + 0.1 * sin(tt * 17.0) * sin(tt * 5.3)
 		_poça(Vector2(0, 2), 210.0 * f, 64.0 * f, Color(0.0, 0.22, 1.0, 0.55 * a))
 		_poça(Vector2(0, 0), 110.0 * f, 32.0 * f, Color(0.1, 0.45, 1.0, 0.6 * a))
+	if sobrecarga > 0.0:                              # SOBRECARGA: luz da energia pulsando no corpo e no chão
+		var cs := _cor_sobrecarga()
+		var fim := clampf(sobrecarga, 0.0, 1.0)
+		var pul := 0.85 + 0.15 * sin(tt * 6.0)
+		_poça(Vector2(0, 2), 240.0 * pul, 74.0 * pul, Color(cs, 0.45 * fim))
+		_poça(Vector2(0, -70.0), 170.0 * pul, 200.0 * pul, Color(cs, 0.22 * fim))
 	if _brilho2 > 0.0:                                # poder vermelho: clarão quente que abre e some
 		var b := _brilho2 / 0.9
 		var e := 1.0 + (1.0 - b) * 1.6
-		_poça(Vector2(0, 0), 170.0 * e, 52.0 * e, Color(1.0, 0.35, 0.1, 0.65 * b))
-		_poça(Vector2(0, -60.0), 160.0 * e, 160.0 * e, Color(1.0, 0.45, 0.15, 0.25 * b))
+		var cb := _cor_sobrecarga() if p.comportamento == "gerador" else Color(1.0, 0.35, 0.1)   # (gerador: clarão de energia)
+		_poça(Vector2(0, 0), 170.0 * e, 52.0 * e, Color(cb, 0.65 * b))
+		_poça(Vector2(0, -60.0), 160.0 * e, 160.0 * e, Color(cb.lightened(0.1), 0.25 * b))
 	_luz.draw_set_transform(Vector2.ZERO)
 # ------------------------------------------------------------------ cérebros
 func _gerador(passou: PackedInt32Array) -> void:
@@ -833,11 +907,9 @@ func _gerador(passou: PackedInt32Array) -> void:
 	if em.is_empty():
 		return
 	if int(em.quadro) in passou:
-		if pvp:                                   # PvP: Elara e Esqueleto Black geram para o lado deles
-			arena.soltar_energia_lado(position + Vector2(em.x, em.y), p.gera_energia, lado, self)   # (também na arena inimiga)
-			Sons.do_personagem(p, "gerar")
-		elif lado == arena.lado_jogador:          # campanha: gera para quem está defendendo
-			arena.soltar_energia(position + Vector2(em.x, em.y), p.gera_energia)
+		var valor := p.gera_energia * (2 if sobrecarga > 0.0 else 1)   # (sobrecarga: o dobro)
+		_soltar_energia(position + Vector2(em.x, em.y), valor)
+		if pvp or lado == arena.lado_jogador:
 			Sons.do_personagem(p, "gerar")
 
 func _corpo_a_corpo(dt: float, passou: PackedInt32Array) -> void:

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:versionCode="1"
+    android:versionName="1.0"
+    android:installLocation="auto" >
+
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true" />
+
+    <uses-feature
+        android:glEsVersion="0x00030000"
+        android:required="true" />
+
+    <application
+        android:label="@string/godot_project_name_string"
+        android:allowBackup="false"
+        android:icon="@mipmap/icon"
+        android:appCategory="game"
+        android:isGame="true"
+        android:hasFragileUserData="false"
+        android:requestLegacyExternalStorage="false"
+        tools:ignore="GoogleAppIndexingWarning" >
+        <profileable
+            android:shell="true"
+            android:enabled="true"
+            tools:targetApi="29" />
+
+        <!-- LOGIN COM GOOGLE DENTRO DO APP: o Godot carrega este plugin (Engine.get_singleton("LoginGoogle")) -->
+        <meta-data
+            android:name="org.godotengine.plugin.v2.LoginGoogle"
+            android:value="com.hvm.login.LoginGoogle" />
+
+        <!-- ATUALIZAÇÃO PELA PLAY STORE DENTRO DO JOGO: Engine.get_singleton("AtualizarPlay") -->
+        <meta-data
+            android:name="org.godotengine.plugin.v2.AtualizarPlay"
+            android:value="com.hvm.AtualizarPlay" />
+
+        <!-- LOJA DE MOEDAS PELA GOOGLE PLAY (Play Billing): Engine.get_singleton("LojaPlay") -->
+        <meta-data
+            android:name="org.godotengine.plugin.v2.LojaPlay"
+            android:value="com.hvm.LojaPlay" />
+
+        <activity
+            android:name=".GodotApp"
+            android:theme="@style/GodotAppSplashTheme"
+            android:launchMode="singleInstancePerTask"
+            android:excludeFromRecents="false"
+            android:exported="false"
+            android:supportsPictureInPicture="true"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="layoutDirection|locale|orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
+            android:resizeableActivity="false"
+            tools:ignore="UnusedAttribute" />
+        <activity-alias
+            android:name=".GodotAppLauncher"
+            android:targetActivity=".GodotApp"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- VOLTAR_PARA_O_JOGO: o site (godot-login.html) abre o jogo por heroesvsmonsters://login -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="heroesvsmonsters" android:host="login" />
+            </intent-filter>
+        </activity-alias>
+
+    </application>
+
+</manifest>

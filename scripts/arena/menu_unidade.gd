@@ -3,12 +3,24 @@ extends Control
 ## Só ícones (nada de texto na arena): PARAR · ANDAR · VOLTAR | PODER AZUL · PODER VERMELHO.
 ## DOIS TOQUES rápidos na tropa = remove ela da arena.
 ##  - Azul = o golpe principal; cada toque acelera os ataques (tocar várias vezes = bem mais rápido, depois volta).
-##  - Vermelho = o 2º poder (só quem tem: Darian, Golem, Aura, Místico, Sentinela, Titã); gasta moedas da conta.
+##  - Vermelho = o 2º poder (só quem tem: Darian, Golem, Aura, Místico, Sentinela, Titã, Arqueiros e a
+##    SOBRECARGA DE ENERGIA da Elara / Esqueleto Black); gasta moedas da conta.
 ##  - Remover (dois toques) = tira da arena (não devolve energia).
 ## Some sozinho depois de uns segundos sem tocar, ou tocando no chão vazio. Quem decide o que cada um faz é a
 ## arena (arena.comando): na campanha vale na hora; no PvP online vai pela rede para os dois aparelhos.
 
-const CUSTO_PODER2 := 15                       ## moedas da conta por uso do poder vermelho
+## Moedas da conta por uso do poder vermelho: o preço SOBE a cada uso na mesma partida (o 1º é barato, usar
+## muitos sai caro) e volta ao começo na partida seguinte. O servidor aceita até 500 por uso (32_poder_preco.sql).
+const PRECOS_PODER2: Array[int] = [25, 50, 100, 150, 200]
+var usos_poder2 := 0                           ## quantos poderes vermelhos já usou nesta partida
+
+## Preço do PRÓXIMO poder vermelho.
+func custo_poder2() -> int:
+	return PRECOS_PODER2[mini(usos_poder2, PRECOS_PODER2.size() - 1)]
+
+## Partida / nível novo: o preço volta ao começo.
+func zerar_preco() -> void:
+	usos_poder2 = 0
 const FECHA_SOZINHO := 6.0
 const D := 46.0                                ## diâmetro de cada botão
 const GAP := 8.0
@@ -73,7 +85,7 @@ func _tela(p: Vector2) -> Vector2:
 
 func _lista() -> Array:
 	var l := ["parar", "andar", "voltar", "|", "azul"]
-	if u.tem_poder2() and Perfil.moedas >= CUSTO_PODER2:   # (só aparece se tiver as moedas)
+	if u.tem_poder2() and Perfil.moedas >= custo_poder2():   # (só aparece se tiver as moedas)
 		l.append("vermelho")
 	return l
 
@@ -144,12 +156,19 @@ func _apertar(id: String) -> void:
 		"vermelho":
 			if u.usando_poder2():
 				return                                   # já está usando
-			if Perfil.moedas < CUSTO_PODER2:
+			var custo := custo_poder2()
+			if Perfil.moedas < custo:
 				_avisar("Sem moedas", Color("ffd0c8"))
 				Sons.tocar("Jogo/som/clique", 0.3)
 				return
-			_gastar_moedas(CUSTO_PODER2)
-			_avisar(("Flechas de fogo!  -%d" if u.p.id in u.FLECHAS_DE_FOGO else "Poder especial!  -%d") % CUSTO_PODER2, Color("fff3c0"))
+			_gastar_moedas(custo)
+			usos_poder2 += 1
+			var nome_poder := "Poder especial!"
+			if u.p.id in u.FLECHAS_DE_FOGO:
+				nome_poder = "Flechas de fogo!"
+			elif u.p.comportamento == "gerador":
+				nome_poder = "Sobrecarga de energia!"
+			_avisar("%s  -%d" % [nome_poder, custo], Color("fff3c0"))
 			Sons.tocar("Jogo/som/clique", 0.8)
 			arena.comando(u, "vermelho")
 		"remover":
@@ -356,6 +375,7 @@ func _moeda(c: Vector2, a: float) -> void:
 	draw_circle(c, 8.0, Color("b8740f", a))
 	draw_circle(c + Vector2(-0.5, -0.5), 6.5, Color("ffd34d", a))
 	var f := _fonte()
-	var txt := str(CUSTO_PODER2)
-	var w := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-	draw_string(f, c + Vector2(-w / 2.0, 3.6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("5a2a08", a))
+	var txt := str(custo_poder2())
+	var tam := 10 if txt.length() <= 2 else 8                # (3 dígitos: letra menor para caber na moeda)
+	var w := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x
+	draw_string(f, c + Vector2(-w / 2.0, 3.6 if tam == 10 else 3.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, tam, Color("5a2a08", a))

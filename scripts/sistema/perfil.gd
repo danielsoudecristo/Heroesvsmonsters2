@@ -42,13 +42,23 @@ static var dia_lados := ""               ## "2026-10-04" (dia de Brasília)
 static var bonus_pago := false
 static var convite := ""                 ## código de convite (com conta)
 static var niveis := {}                  ## nível da conta de cada personagem (com conta)
+static var energia_extra := 0            ## (painel: 37_painel_admin.sql) energia a mais no começo de cada partida (com conta)
+static var banido := false               ## (painel) conta bloqueada para o online
 static var convidado_ok := false         ## já escolheu "Jogar como convidado" (não pergunta de novo)
 static var bot_nivel := 1                ## nível do bot do PvP (sobe quando você ganha dele, desce quando perde)
+static var trofeus_bot_dia := ""         ## CONVIDADO: dia (Brasília) da contagem abaixo
+static var trofeus_bot_hoje := 0         ## CONVIDADO: troféus que o bot já deu hoje (limite por dia)
 static var dificuldade := "medio"         ## campanha: facil / medio / dificil / hardcore (escolhe no Novo jogo)
 static var recordes := {}                ## campanha POR LADO: {"heroes"|"monsters": {dificuldade -> maior nível COMPLETADO}}
 static var pvp_adversario := ""          ## nome do adversário da busca (só nesta partida)
 static var pvp_modo := "normal"          ## PvP: "normal" ou "cerco" (só para a próxima partida)
 static var pvp_sala := {}                ## PvP ONLINE: a sala que o servidor achou (vazio = contra o bot)
+## SÉRIE CONTRA O BOT (Batalha): {jogo, meus, dele, nivel, lado_original, adversario, continua}. Vazio = sem série.
+## Só na memória: vive entre uma partida e a próxima da mesma série (a cena do PvP recarrega).
+static var serie_bot := {}
+## REPLAY para assistir (36_replays.sql): a "receita" da partida + "lado_ver". Vazio = partida normal.
+static var pvp_replay := {}
+static var replays_volta := "res://cenas/sala_entrada.tscn"   ## para onde o "← VOLTAR" da tela de replays leva
 static var tutorial_menu := false        ## já viu o tutorial do menu
 static var tutorial_jogo := false        ## já fez o tutorial da primeira batalha
 static var convite_visto := false        ## já abriu "Convide amigos" (tira a etiqueta NOVO)
@@ -83,6 +93,8 @@ static func _ler_arquivo() -> void:
 	trofeus = cf.get_value("convidado", "trofeus", cf.get_value("perfil", "trofeus", 0))
 	vitorias = cf.get_value("convidado", "vitorias", 0)
 	derrotas = cf.get_value("convidado", "derrotas", 0)
+	trofeus_bot_dia = str(cf.get_value("convidado", "trofeus_bot_dia", ""))
+	trofeus_bot_hoje = int(cf.get_value("convidado", "trofeus_bot_hoje", 0))
 	var d = cf.get_value("bonus", "dia", "")
 	dia_lados = d if d is String else ""
 	lados_hoje = cf.get_value("bonus", "lados", [])
@@ -106,6 +118,8 @@ static func salvar() -> void:
 		cf.set_value("convidado", "trofeus", trofeus)
 		cf.set_value("convidado", "vitorias", vitorias)
 		cf.set_value("convidado", "derrotas", derrotas)
+		cf.set_value("convidado", "trofeus_bot_dia", trofeus_bot_dia)
+		cf.set_value("convidado", "trofeus_bot_hoje", trofeus_bot_hoje)
 		cf.set_value("bonus", "dia", dia_lados)
 		cf.set_value("bonus", "lados", lados_hoje)
 		cf.set_value("bonus", "pago", bonus_pago)
@@ -145,12 +159,16 @@ static func de_servidor(srv: Dictionary) -> void:
 	var l = srv.get("lados_hoje")
 	lados_hoje = l if l is Array else []
 	bonus_pago = bool(srv.get("bonus_duplo_pago", false))
+	if srv.has("energia_extra"):
+		energia_extra = int(srv.get("energia_extra", 0))
 
 ## Saiu da conta: volta para o progresso de convidado deste aparelho.
 static func voltar_convidado() -> void:
 	_com_conta = false
 	niveis = {}
 	convite = ""
+	energia_extra = 0
+	banido = false
 	_ler_arquivo()
 
 # ---------------------------------------------------------------- ligas e bônus
@@ -217,6 +235,18 @@ static func ganhar_moedas(n: int, l: String) -> Dictionary:
 			c.no_servidor("ganhar_moedas_campanha", {"qtd": mini(60, resto), "p_lado": l if l != "" else null})
 			resto -= 60
 	return {"ganho": ganho, "alta": alta, "duplo": duplo}
+
+## CONVIDADO venceu o bot na Batalha: soma até o limite do dia. Devolve [ganho, quanto já ganhou hoje].
+## (Com conta isso é no servidor: supabase/34_trofeus_bot.sql.)
+static func ganhar_trofeus_bot(premio: int, limite: int) -> Array:
+	if trofeus_bot_dia != hoje():
+		trofeus_bot_dia = hoje()
+		trofeus_bot_hoje = 0
+	var ganho := clampi(limite - trofeus_bot_hoje, 0, premio)
+	trofeus += ganho
+	trofeus_bot_hoje += ganho
+	salvar()
+	return [ganho, trofeus_bot_hoje]
 
 ## O recorde é por lado (heróis e monstros não misturam). Vazio/fora do padrão vira os dois lados vazios.
 ## O arquivo antigo (só dificuldade -> nível) era UM número para os DOIS lados: ele continua valendo

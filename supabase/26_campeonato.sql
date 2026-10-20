@@ -117,7 +117,7 @@ begin
   end if;
   if c.status <> 'andando' then return; end if;
   f := c.fase; n := jsonb_array_length(c.vencedores -> f);
-  prazo := now() > c.fase_ini + interval '8 minutes';
+  prazo := now() > c.fase_ini + interval '35 minutes';   -- partidas sem tempo: 25 min + prorrogação de 3 min (+ fúria)
   -- 1) lutas com pessoa: resultado da sala (pessoa x pessoa) ou o relato (pessoa x bot)
   for m in 0..n - 1 loop
     if (c.vencedores -> f ->> m)::int >= 0 then continue; end if;
@@ -199,7 +199,7 @@ end $$;
 create or replace function public._camp_json(p_id uuid) returns json language sql stable security definer set search_path = public as $$
   select json_build_object('id', c.id, 'status', c.status, 'fase', c.fase,
     'falta', greatest(0, extract(epoch from c.comeca_em - now()))::int,
-    'prazo', case when c.fase_ini is null then 0 else greatest(0, extract(epoch from c.fase_ini + interval '8 minutes' - now()))::int end,
+    'prazo', case when c.fase_ini is null then 0 else greatest(0, extract(epoch from c.fase_ini + interval '35 minutes' - now()))::int end,
     'vagas', c.vagas, 'vencedores', c.vencedores, 'lutas', c.lutas,
     'inscritos', (select coalesce(json_agg(json_build_object('nome', split_part(p.nome, ' ', 1), 'foto', p.avatar_url, 'lado', i.lado,
                     'eu', i.jogador = auth.uid()) order by i.entrou_em), '[]')

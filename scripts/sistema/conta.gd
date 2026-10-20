@@ -467,6 +467,10 @@ func _conectar_perfil() -> void:
 		if r2.ok and r2.dados is Dictionary:
 			srv = r2.dados
 	Perfil.de_servidor(srv)
+	var ra: Dictionary = await chamar("meus_ajustes")           # (37_painel_admin.sql) ajustes do painel
+	if ra.ok and ra.dados is Dictionary:
+		Perfil.energia_extra = int(ra.dados.get("energia_extra", 0))
+		Perfil.banido = ra.dados.get("banido", false) == true
 	var rp: Dictionary = await ler("personagens_jogador?select=personagem,nivel")
 	if rp.ok and rp.dados is Array:
 		var nv := {}
@@ -557,6 +561,10 @@ func _baixar_foto(url: String) -> void:
 ## Chama uma função do banco (as dos arquivos supabase/*.sql). Devolve {ok, dados, erro, codigo}.
 func chamar(nome: String, args := {}) -> Dictionary:
 	return await _com_sessao(HTTPClient.METHOD_POST, "/rest/v1/rpc/" + nome, args)
+
+## Chama uma Edge Function do Supabase (as de supabase/functions/*) com o login. Ex.: funcao("verificar-compra", {...})
+func funcao(nome: String, corpo := {}) -> Dictionary:
+	return await _com_sessao(HTTPClient.METHOD_POST, "/functions/v1/" + nome, corpo)
 
 ## Lê uma tabela (só as linhas do próprio jogador, por causa das regras do banco). Ex.: "personagens_jogador?select=personagem,nivel"
 func ler(tabela_e_filtro: String) -> Dictionary:
