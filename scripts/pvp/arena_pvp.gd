@@ -2486,6 +2486,7 @@ func _preparar_replay(d: Dictionary) -> void:
 
 func _iniciar_replay() -> void:
 	escolhendo = false
+	hud.visible = false                                # REPLAY: sem painel de energia nem cartas (só a barra do replay)
 	_recomecar_replay()
 	barra_replay = Control.new()
 	barra_replay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2538,11 +2539,11 @@ func _correr_replay() -> void:
 		explosoes.clear()
 
 func _ret_barra_replay() -> Rect2:
-	return Rect2(376, C.H - 40, C.W - 376 - 316, 12)
+	return Rect2(250, C.H - 40, C.W - 250 - 316, 12)
 
 ## Botão ← VOLTAR (sai do replay e volta para a lista de onde a pessoa veio).
 func _ret_voltar_replay() -> Rect2:
-	return Rect2(146, C.H - 62, 110, 52)
+	return Rect2(16, C.H - 62, 110, 52)
 
 ## Botão de TROCAR DE ARENA: ver a arena dos Heroes ou a dos Monsters (qualquer momento, sem precisar de tropa lá).
 func _ret_arena_replay() -> Rect2:
@@ -2588,7 +2589,7 @@ func _desenhar_barra_replay() -> void:
 	var total := _total_replay()
 	var agora := replay_arrasto if replay_arrasto >= 0 else (replay_alvo if replay_alvo >= 0 else passo_n)
 	var k := clampf(float(agora) / float(total), 0.0, 1.0)
-	var fundo_r := Rect2(138, C.H - 70, C.W - 144, 66)            # (cobre a faixa de baixo do HUD, que no replay não serve)
+	var fundo_r := Rect2(6, C.H - 70, C.W - 12, 66)                # (no replay o HUD fica escondido: a barra ocupa a faixa toda)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.03, 0.04, 0.1, 0.96)
 	sb.border_color = Color("2fd15a")
@@ -2608,8 +2609,8 @@ func _desenhar_barra_replay() -> void:
 	b.draw_circle(bola, 15 if replay_arrasto >= 0 else 12, Color("120c04"))
 	b.draw_circle(bola, 12 if replay_arrasto >= 0 else 9, Color.WHITE)
 	var txt_t := "%s / %s" % [_mmss(agora / 60.0), _mmss(total / 60.0)]
-	b.draw_string_outline(f_titulo, Vector2(266, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 6, Color("120c04"))
-	b.draw_string(f_titulo, Vector2(266, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+	b.draw_string_outline(f_titulo, Vector2(136, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 6, Color("120c04"))
+	b.draw_string(f_titulo, Vector2(136, r.position.y + 13), txt_t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
 	_botao_replay(b, _ret_voltar_replay(), "← VOLTAR", Color("4a5fae"), Color("aebcff"))
 	var a := _arena_do_botao_replay()
 	var nomes: Dictionary = rede.get("nomes", {})
@@ -3745,9 +3746,9 @@ func _desenhar() -> void:
 			d.draw_circle(f.pos, 1.6 * ta + 0.3, Color(Color.WHITE.lerp(cf, 0.35 if f.has("cor") else 0.0), 0.95 * ta))
 		else:
 			d.draw_circle(f.pos, 2.5, Color(1, 1, 1, 1.0 - f.t / 0.5))
-	# energia (só a sua aparece)
+	# energia (só a sua aparece; no REPLAY nenhuma)
 	for o in orbes:
-		if o.lado == lado_local and not o.get("pega_local", false) and C.energia_visivel(o.t, tempo_s):
+		if replay.is_empty() and o.lado == lado_local and not o.get("pega_local", false) and C.energia_visivel(o.t, tempo_s):
 			hud.icone_energia(d, o.pos, 21.0 * (1.0 + 0.06 * sin(tempo_s * 6.0)))
 	# textos de dano (sem espelhar)
 	for tx in textos:
@@ -3793,7 +3794,7 @@ func _desenhar_tela() -> void:
 			d.draw_string_outline(f_titulo, tx.pos - Vector2(80, 0), tx.txt, HORIZONTAL_ALIGNMENT_CENTER, 160, 20, 5, Color(0, 0, 0, al))
 			d.draw_string(f_titulo, tx.pos - Vector2(80, 0), tx.txt, HORIZONTAL_ALIGNMENT_CENTER, 160, 20, Color(tx.cor, al))
 	var alvo: Vector2 = hud.alvo_energia()
-	for v in voos:
+	for v in (voos if replay.is_empty() else []):
 		var k2: float = v.t / 0.45
 		var e := 1.0 - pow(1.0 - k2, 3.0)
 		var pos: Vector2 = v.de.lerp(alvo, e) - Vector2(0, sin(k2 * PI) * 60.0)
