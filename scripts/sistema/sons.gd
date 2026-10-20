@@ -58,6 +58,8 @@ func carregar(caminho: String) -> AudioStream:
 			break
 	if s == null and caminho == "Jogo/som/energia":
 		s = _som_energia()                    # sem arquivo: o jogo cria o som sozinho
+	if s == null and caminho == "Jogo/som/terra":
+		s = carregar("Jogo/som/colocar")      # (sem terra.mp3: colocar.mp3 ou o "tum" feito pelo jogo)
 	if s == null and caminho == "Jogo/som/colocar":
 		s = _som_colocar()                    # sem arquivo: "tum" do personagem batendo na terra
 	_cache[caminho] = s
@@ -85,7 +87,7 @@ func do_personagem(p: PersonagemDados, nome: String) -> void:
 		tocar(p.sons[nome], p.volumes.get(nome, 0.8))
 
 ## Som de COLOCAR o personagem: "tum" grave dele batendo na terra + um pouco de poeira (feito pelo jogo, sem arquivo).
-## Para trocar por outro, é só pôr um arquivo em assets/Jogo/som/colocar.mp3 (ou .wav/.ogg).
+## Para trocar por outro, é só pôr um arquivo em assets/Jogo/som/terra.mp3 (ou .wav/.ogg).
 func _som_colocar() -> AudioStreamWAV:
 	const TAXA := 22050
 	var dur := 0.32
